@@ -26,6 +26,7 @@ RecentCutBlocks <- function(dType, dYear, focalWindow = focalRadius, dBaseYear) 
   youngHarvest <- setValues(youngHarvest, youngHarvestValues)
   rm(youngHarvestValues)
 
+  gc()
   focalMatrix <- terra::focalMat(x = youngHarvest, type = "circle", d = focalWindow)
   youngFocalFile <- file.path("outputs", paste0("harvest_0to5_", dBaseYear,  "_focal", focalWindow, "_", tileNum, ".tif"))
   youngFocal <- terra::focal(youngHarvest, w = focalMatrix, fun = sum, na.rm = TRUE, expand = FALSE, filename = youngFocalFile,
@@ -39,8 +40,8 @@ RecentCutBlocks <- function(dType, dYear, focalWindow = focalRadius, dBaseYear) 
   oldHarvestValues[harvestDT[isOld == TRUE,]$pixelID] <- 1
   youngHarvest <- setValues(youngHarvest, oldHarvestValues)
   oldFocalFile <- file.path("outputs", paste0("harvest_6to20_", dBaseYear,  "_focal", focalWindow, "_", tileNum, ".tif"))
-  oldFocal <- terra::focal(youngHarvest, w = focalWindow, fun = sum, na.rm = TRUE, expand = FALSE, filename = oldFocalFile,
-                           datatype = "INT1U", overwrite = TRUE)
+  oldFocal <- terra::focal(youngHarvest, w = focalMatrix, fun = sum, na.rm = TRUE,
+                           expand = FALSE, filename = oldFocalFile, overwrite = TRUE)
 
   rm(oldFocal, youngHarvest, harvestDT)
   gc()
@@ -48,9 +49,9 @@ RecentCutBlocks <- function(dType, dYear, focalWindow = focalRadius, dBaseYear) 
 
 #this is where we should talk with Yan -
 if (runAnalysis) {
-  Map(RecentCutBlocks, dType = dTypeList, dYear = dYearList,
-      MoreArgs = list(dBaseYear = 2005, focalWindow = focalRadius))
-  Map(RecentCutBlocks, dType = dTypeList, dYear = dYearList,
+  # Map(RecentCutBlocks, dType = dTypeList, dYear = dYearList,
+  #     MoreArgs = list(dBaseYear = 2005, focalWindow = focalRadius))
+  Map(RecentCutBlocks, dType = dTypeList[4:6], dYear = dYearList[4:6],
       MoreArgs = list(dBaseYear = 2020, focalWindow = focalRadius))
 }
 

@@ -19,7 +19,7 @@ RecentNaturalDist <- function(dType, dYear, dBaseYear, focalWindow = focalRadius
   names(burnDT) <- c("pixelID", "burn")
   burnDT <- burnDT[burn == 1,]
   rm(dType)
-  gc()#30 GB ram - Yikes
+  gc()#30 GB ram - Yikes- these really accumulate
   burnDT[, year := c(values(dYear)[burnDT$pixelID])]
   #easier to do the logical queries on the non-NA and then rebuild the rasters with the eventual binary values
   burnVals <- rep(NA, ncell(dYear))
@@ -32,8 +32,8 @@ RecentNaturalDist <- function(dType, dYear, dBaseYear, focalWindow = focalRadius
 
   focalMatrix <- terra::focalMat(x = outRas, d = focalWindow, type = "circle")
   outFile <- file.path("outputs", paste0("naturalDisturbance", dBaseYear,  "_focal", focalWindow, "_", tileNum, ".tif"))
-  focalOut <- terra::focal(outRas, w = focalMatrix, fun = sum, na.rm = TRUE, expand = FALSE, filename = outFile,
-                           datatype = "INT1U", overwrite = TRUE) #30 * 30
+  focalOut <- terra::focal(outRas, w = focalMatrix, sum, na.rm = TRUE, expand = FALSE,
+                           filename = outFile, overwrite = TRUE)
   #recording focal window size in filename in case it changes.
   rm(outRas, focalOut)
   gc()
@@ -42,6 +42,6 @@ RecentNaturalDist <- function(dType, dYear, dBaseYear, focalWindow = focalRadius
 if (runAnalysis) {
   # Map(RecentNaturalDist, dType = dTypeList[3:6], dYear = dYearList[3:6],
   #     MoreArgs = list(dBaseYear = 2005, focalWindow = focalRadius)) Not sure if we need this yet - perhaps we just use age for these
-  Map(RecentNaturalDist, dType = dTypeList[3:6], dYear = dYearList[3:6],
+  Map(RecentNaturalDist, dType = dTypeList, dYear = dYearList,
       MoreArgs = list(dBaseYear = 2020, focalWindow = focalRadius))
 }

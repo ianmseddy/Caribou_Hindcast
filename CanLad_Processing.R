@@ -93,6 +93,8 @@ lapply(CanLadSA, SpaDES.tools::splitRaster, nx = 3, ny = 2, buffer = c(35, 35), 
 #Leblond formula
 # section 4.1 of Leblond et al 2014
 # 0.25 * mature conifer  > 70 yo  --- uses CaNFIR_att_age,
+# 0.19 * young mature conifer forests 50-70 years old
+source("tiles_MatureConifers.R")
 # 0.14 * wetlands
 # 0.22 * open lichen woodlands (forest with < 30% cover)
 # 0.06 * natural disturbances < 20
@@ -104,10 +106,25 @@ lapply(CanLadSA, SpaDES.tools::splitRaster, nx = 3, ny = 2, buffer = c(35, 35), 
 #so an area of 1 km that is entirely natural disturbance < 20 becomes 0.06. Then we sum the weights?
 #since these are mutually exclusive, the theoretical maximum will be 0.25 (a square km of mature conifer > 70 y.o)
 
+# In order
+#1)	Identify the two mature conifer classes, age 50-70 and 70+, with canopy closure > 30%
+source("tiles_MatureConifers.R")
+#2)	Identify the natural disturbances < 20 y.o
+source("tiles_NaturalDisturbanceStands.R")
+#3)	Identify the two age classes of regenerating cutblocks (0-5 and 6-20)
+source("tiles_HarvestedStands.R")
+#4)	Identify the Open Lichen Woodlands: conifers age 50+ with canopy closure < 30%  (until some fancier dataset arrives)
+source("tiles_OpenWoodlands.R")
+#5)	Identify Regenerating Stands: any stands > 20 years that aren’t conifer 50+ (ie none of the above classes)
+#this means conifer 50+ that is 21-49, or deciduous 20+
+
+#6)	Identify wetlands among non-forest pixels
+
+
+
 
 #####mature conifer#####
-ageList <- list.files(path = "GIS/tiles", pattern = "age_S", recursive = TRUE, full.names = TRUE)
-coniferList <- list.files(path = "GIS/tiles", pattern = "?")
+
 
 
 #after, these need to be divided by 9 and multiplied by 0.06, but wait until we know the focal statistic to use
