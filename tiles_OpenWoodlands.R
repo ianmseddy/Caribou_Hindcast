@@ -39,6 +39,10 @@ OpenWoodlands <- function(age, canopyCover, percDecid, focalWindow, dBaseYear) {
   repvals[openWoodland] <- 1
   openWoodland <- setValues(age, repvals)
   rm(repvals)
+
+  outFile <- file.path("outputs/raw", paste0("openWoodland", dBaseYear,"_", tileNum, ".tif"))
+  writeRaster(openWoodland, filename = outFile, datatype = "INT1U")
+
   outFile <- file.path("outputs", paste0("openWoodland_", dBaseYear,  "_focal", focalWindow, "_", tileNum, ".tif"))
   focalOut <- terra::focal(openWoodland, w = focalMatrix, sum, na.rm = TRUE, expand = FALSE,
                            filename = outFile, overwrite = TRUE)

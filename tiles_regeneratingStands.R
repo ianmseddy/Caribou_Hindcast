@@ -32,6 +32,9 @@ RegeneratingStands <- function(age, percDecid, focalWindow, dBaseYear) {
   rm(repvals, percDecid)
   gc()
 
+  outFile <- file.path("outputs/raw", paste0("regeneratingStand_", dBaseYear,"_", tileNum, ".tif"))
+  writeRaster(regeneratingStand, filename = outFile, datatype = "INT1U")
+
   outFile <- file.path("outputs", paste0("regeneratingStand_", dBaseYear,  "_focal", focalWindow, "_", tileNum, ".tif"))
   focalOut <- terra::focal(regeneratingStand, w = focalMatrix, sum, na.rm = TRUE, expand = FALSE,
                            filename = outFile, overwrite = TRUE)

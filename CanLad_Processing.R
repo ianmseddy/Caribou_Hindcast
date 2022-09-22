@@ -14,7 +14,8 @@ focalRadius <- 1000 #the radius to use for focal statistics, in metres
 
 #cropping takes 15 minutes a layer - so write some intermediate files - reducing size by 67% (alternatively cache)
 #this should be a prepinputs
-
+#TODO
+# this is mising the original landposition raster
 GISfiles <- list("CaNFIR_att_age_S_2020_v0.tif" =
                    "https://drive.google.com/file/d/18BqqOiwpuY0bZbM1DMmYi5sDnfTb0JIH/view?usp=sharing",
                  "CaNFIR_att_age_S_1985_v0.tif" =
@@ -23,6 +24,7 @@ GISfiles <- list("CaNFIR_att_age_S_2020_v0.tif" =
                    "https://drive.google.com/file/d/17e_qPKROfWsB7Wa2ObMIvtwRgk1GBsM_/view?usp=sharing",
                  "CaNFIR_att_closure_S_1985_v0.tif" =
                    "https://drive.google.com/file/d/17FIcD9_GYOfOB2mMXtSQHoyJryl4L9vu/view?usp=sharing",
+                 #need to add the percD rasters
                  "CanLaD_Latest_1985_2020_YRT2.tif" =
                    "https://drive.google.com/file/d/19tSq6xsHks-5xMrDGZcAqFUJziESUw8f/view?usp=sharing",
                  "CanLaD_Latest_1985_2020_TYPE.tif" =
@@ -51,7 +53,7 @@ SA <- Canada[Canada$PRUID %in% c("10", "11", "12", "13", "24", "35"),]
 #East of Manitoba, ignoring Nunavut
 SA <- terra::project(SA, template)
 
-if (!all(file.exists(paste0("GIS/Eastern_", basename(CanLadData))))) {
+if (!all(file.exists(paste0("GIS/Eastern_",basename( unlist(CanLadData)))))) {
   bulkPostProcess <- function(filePath, SA){
     dType <- ifelse(basename(filePath) == "CanLaD_Latest_1985_2020_YRt2.tif", "INT2U", "INT1U")
     pre <- rast(file.path("C:/Ian/Data/CanLad", filePath))
@@ -102,7 +104,7 @@ source("tiles_MatureConifers.R")
 # 0.04 * cutblocks 6-20 - same weight as 5yo but s.d. is different
 # 0.06 * regenerating stands > 20 years post disturbance (but that aren't mature conifers)
 
-#calculate the binaries, then focal statistics, then multiply the resulting fraction by it's weight.
+#calculate the binaries, then focal statistics, then multiply the resulting fraction by its weight.
 #so an area of 1 km that is entirely natural disturbance < 20 becomes 0.06. Then we sum the weights?
 #since these are mutually exclusive, the theoretical maximum will be 0.25 (a square km of mature conifer > 70 y.o)
 
@@ -117,8 +119,9 @@ source("tiles_HarvestedStands.R")
 source("tiles_OpenWoodlands.R")
 #5)	Identify Regenerating Stands: any stands > 20 years that aren’t conifer 50+ (ie none of the above classes)
 #this means conifer 50+ that is 21-49, or deciduous 20+
-
+source("tiles_regeneratingStands.R")
 #6)	Identify wetlands among non-forest pixels
+#this should be easy, combine tw
 
 
 

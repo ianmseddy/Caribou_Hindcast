@@ -41,6 +41,8 @@ MatureConifer <- function(age, canopyCover, percDecid, focalWindow, dBaseYear) {
   repvals[youngConifer] <- 1
   youngConifer <- setValues(age, repvals)
   rm(repvals)
+  outFile <- file.path("outputs/raw", paste0("youngConifer", dBaseYear,"_", tileNum, ".tif"))
+  writeRaster(youngConifer, filename = outFile, datatype = "INT1U", overwrite = TRUE)
   outFile <- file.path("outputs", paste0("youngConifer_", dBaseYear,  "_focal", focalWindow, "_", tileNum, ".tif"))
   focalOut <- terra::focal(youngConifer, w = focalMatrix, sum, na.rm = TRUE, expand = FALSE,
                            filename = outFile, overwrite = TRUE)
@@ -52,6 +54,8 @@ MatureConifer <- function(age, canopyCover, percDecid, focalWindow, dBaseYear) {
   repvals[oldConifer] <- 1
   oldConifer <- setValues(age, repvals)
   rm(repvals)
+  outFile <- file.path("outputs/raw", paste0("matureConifer", dBaseYear,"_", tileNum, ".tif"))
+  writeRaster(oldConifer, filename = outFile, datatype = "INT1U")
   outFile <- file.path("outputs", paste0("matureConifer_", dBaseYear,  "_focal", focalWindow, "_", tileNum, ".tif"))
   focalOut <- terra::focal(oldConifer, w = focalMatrix, sum, na.rm = TRUE, expand = FALSE,
                            filename = outFile, overwrite = TRUE)
