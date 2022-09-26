@@ -2,6 +2,7 @@ ageList <- list.files(path = "GIS/tiles", pattern = "att_age", full.names = TRUE
   grep(., pattern = ".grd", value = TRUE)
 landPosList <- list.files(path = "GIS/tiles", pattern = "land_pos", full.names = TRUE) %>%
   grep(., pattern = ".grd", value = TRUE)
+lccList <- list.files(path = "GIS/tiles", pattern = "")
 
 Wetland <- function(age, landPos, focalWindow, dBaseYear) {
 
@@ -42,9 +43,6 @@ Wetland <- function(age, landPos, focalWindow, dBaseYear) {
 }
 
 if (runAnalysis) {
-  #filter the years outside of function, I think...
-  #here the year is irrelevant, unlike disturbance, because the rasters are snapshot in time.
-  #but we should record the year for outputs.
   getYear <- function(pat, List) { return(List[grep(pat, List)])}
   landPosList2020 <- getYear(2020, landPosList)
   ageList2020 <- getYear(2020, ageList)
