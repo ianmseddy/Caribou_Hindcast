@@ -3,8 +3,11 @@ ageList <- list.files(path = "GIS/tiles", pattern = "att_age", full.names = TRUE
   grep(., pattern = ".grd", value = TRUE)
 percDecidList <- list.files(path = "GIS/tiles", pattern = "prcD", full.names = TRUE) %>%
   grep(., pattern = ".grd", value = TRUE)
-
-RegeneratingStands <- function(age, percDecid, focalWindow, dBaseYear) {
+posList <- list.files(path = "GIS/tiles", pattern = "pos", full.names = TRUE) %>%
+  grep(., pattern = ".grd", value = TRUE)
+canopyCoverList <- list.files(path = "GIS/tiles", pattern = "att_closure", full.names = TRUE) %>%
+  grep(., pattern = ".grd", value = TRUE)
+RegeneratingStands <- function(age, percDecid, focalWindow, pos, canopyCover, dBaseYear) {
 
   tileNum <- stringr::str_extract(age, pattern = "tile[0-9]+")
 
@@ -24,6 +27,22 @@ RegeneratingStands <- function(age, percDecid, focalWindow, dBaseYear) {
   #so keep all deciduous or young coniferous
   percDecid <- rast(percDecid)
   dt[, percDecid := percDecid[][dt$pixelID]]
+
+  pos <- rast(pos)
+  dt[, pos := pos[][dt$pixelID]]
+
+  #dedicudous wetland is deciduous, regardless of age and canopy cover
+  dt <- dt[c(percDecid > 50 & pos != 5)]
+
+  rm(pos)
+  dt[, pos := NULL]
+
+  canopyCover <- rast(canopyCover)
+  dt[, cc := canopyCover[][dt$pixelID]]
+  #assume age 50+ with cover below 30 is either a woodland or wetland and will not regenerate to forest
+  #this excludes deciduous woodlands (along with e.g. grassland)
+  dt <- dt[!c(age > 50 & cc < 30)]
+
   regeneratingStand <- dt[percDecid > 50 | c(percDecid <= 50 & age < 50),]$pixelID
   rm(dt)
   repvals <- rep(NA, times = ncell(percDecid))
@@ -52,7 +71,10 @@ if (runAnalysis) {
   getYear <- function(pat, List) { return(List[grep(pat, List)])}
   percDecidList2020 <- getYear(2020, percDecidList)
   ageList2020 <- getYear(2020, ageList)
+  posList2020 <- getYear(2020, posList)
+  canopyCoverList2020 <- getYear(2020, canopyCoverList)
   Map(RegeneratingStands, age = ageList2020, percDecid = percDecidList2020,
+      canopyCover = canopyCoverList2020, pos = posList2020,
       MoreArgs = list(dBaseYear = 2020, focalWindow = focalRadius))
 }
 

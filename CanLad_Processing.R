@@ -126,11 +126,11 @@ source("tiles_NaturalDisturbanceStands.R")
 #3)	Identify the two age classes of regenerating cutblocks (0-5 and 6-20)
 source("tiles_HarvestedStands.R")
 
-#4)	Identify the Open Lichen Woodlands: conifers age 50+ with canopy closure < 30%  (until some fancier dataset arrives)
+#4)	Identify the Open Lichen Woodlands: conifers age 50+ with canopy closure < 30% that aren't wetlands
 source("tiles_OpenWoodlands.R")
 
 #5)	Identify Regenerating Stands: any stands > 20 years that aren’t conifer 50+ (ie none of the above classes)
-#this class includes majority-conifer pixels that are 21-49 years of age, and deciduous stands age 20+
+#this class includes majority-conifer pixels that are 21-49 years of age, and deciduous stands age 20+ that aren't wetland.
 #some of these deciduous 20+ may be wetland - these will be classified as wetland instead
 source("tiles_regeneratingStands.R")
 

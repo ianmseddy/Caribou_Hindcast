@@ -4,8 +4,9 @@ ageList <- list.files(path = "GIS/tiles", pattern = "att_age", full.names = TRUE
   grep(., pattern = ".grd", value = TRUE)
 percDecidList <- list.files(path = "GIS/tiles", pattern = "prcD", full.names = TRUE) %>%
   grep(., pattern = ".grd", value = TRUE)
-
-OpenWoodlands <- function(age, canopyCover, percDecid, focalWindow, dBaseYear) {
+posList <- list.files(path = "GIS/tiles", pattern = "pos", full.names = TRUE) %>%
+  grep(., pattern = ".grd", value = TRUE)
+OpenWoodlands <- function(age, canopyCover, percDecid, pos, focalWindow, dBaseYear) {
 
   tileNum <- stringr::str_extract(age, pattern = "tile[0-9]+")
 
@@ -30,6 +31,13 @@ OpenWoodlands <- function(age, canopyCover, percDecid, focalWindow, dBaseYear) {
   rm(canopyCover)
   gc()
 
+  pos <- rast(pos)
+  dt[, pos := pos[][dt$pixelID]]
+  dt <- dt[pos != 5] #remove wetlands
+  dt[, pos := NULL]
+  rm(pos)
+  gc()
+
   #age must be 50+
   age <- rast(age)
   dt[, age := age[][dt$pixelID]]
@@ -41,7 +49,7 @@ OpenWoodlands <- function(age, canopyCover, percDecid, focalWindow, dBaseYear) {
   rm(repvals)
 
   outFile <- file.path("outputs/raw", paste0("openWoodland", dBaseYear,"_", tileNum, ".tif"))
-  writeRaster(openWoodland, filename = outFile, datatype = "INT1U")
+  writeRaster(openWoodland, filename = outFile, datatype = "INT1U", overwrite = TRUE)
 
   outFile <- file.path("outputs", paste0("openWoodland_", dBaseYear,  "_focal", focalWindow, "_", tileNum, ".tif"))
   focalOut <- terra::focal(openWoodland, w = focalMatrix, sum, na.rm = TRUE, expand = FALSE,
@@ -58,7 +66,9 @@ if (runAnalysis) {
   percDecidList2020 <- getYear(2020, percDecidList)
   ageList2020 <- getYear(2020, ageList)
   canopyCoverList2020 <- getYear(2020, canopyCoverList)
-  Map(OpenWoodlands, age = ageList2020, canopyCover = canopyCoverList2020, percDecid = percDecidList2020,
+  posList2020 <- getYear(2020, posList)
+  Map(OpenWoodlands, age = ageList2020, canopyCover = canopyCoverList2020,
+      percDecid = percDecidList2020, pos = posList2020,
       MoreArgs = list(dBaseYear = 2020, focalWindow = focalRadius))
 }
 
