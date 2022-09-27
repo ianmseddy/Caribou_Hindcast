@@ -31,7 +31,7 @@ RegeneratingStands <- function(age, percDecid, focalWindow, pos, canopyCover, dB
   pos <- rast(pos)
   dt[, pos := pos[][dt$pixelID]]
 
-  #dedicudous wetland is deciduous, regardless of age and canopy cover
+  #dedicudous wetland is wetland, regardless of age and canopy cover
   dt <- dt[c(percDecid > 50 & pos != 5)]
 
   rm(pos)

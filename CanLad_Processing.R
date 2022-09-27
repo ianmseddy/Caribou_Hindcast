@@ -127,25 +127,19 @@ source("tiles_NaturalDisturbanceStands.R")
 source("tiles_HarvestedStands.R")
 
 #4)	Identify the Open Lichen Woodlands: conifers age 50+ with canopy closure < 30% that aren't wetlands
+#this assumse that ages and disturbances are consistent
 source("tiles_OpenWoodlands.R")
 
 #5)	Identify Regenerating Stands: any stands > 20 years that aren’t conifer 50+ (ie none of the above classes)
 #this class includes majority-conifer pixels that are 21-49 years of age, and deciduous stands age 20+ that aren't wetland.
 #some of these deciduous 20+ may be wetland - these will be classified as wetland instead
+#since disturbance supersedes all - must check that the 20-50 are also undisturbed..
 source("tiles_regeneratingStands.R")
 
 #6)	Identify wetlands
 #per Mathieu, wetland was Alnus spp, open (ie non forest) or flooded. Alnus is an 'unproductive' land cover class
 #therefore, 'mature conifer' that falls under wetland would still be mature conifer.
-#Our wetland will be non-forest wetland, and deciduous 20+ wetland.
-
-
-
-#####mature conifer#####
-
-
-
-#after, these need to be divided by 9 and multiplied by 0.06, but wait until we know the focal statistic to use
-
+#Our wetland will be non-forest wetland, deciduous 20+, and age 50+ conifer with cover <30%
+#
 
 

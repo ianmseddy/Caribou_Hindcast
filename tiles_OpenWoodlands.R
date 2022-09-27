@@ -38,7 +38,7 @@ OpenWoodlands <- function(age, canopyCover, percDecid, pos, focalWindow, dBaseYe
   rm(pos)
   gc()
 
-  #age must be 50+
+  #deciduous age 50+ regardless of cover (20-50 is a regenerating stand)
   age <- rast(age)
   dt[, age := age[][dt$pixelID]]
   openWoodland <- dt[age > 49,]$pixelID
