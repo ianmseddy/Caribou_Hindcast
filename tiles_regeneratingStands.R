@@ -7,6 +7,7 @@ posList <- list.files(path = "GIS/tiles", pattern = "pos", full.names = TRUE) %>
   grep(., pattern = ".grd", value = TRUE)
 canopyCoverList <- list.files(path = "GIS/tiles", pattern = "att_closure", full.names = TRUE) %>%
   grep(., pattern = ".grd", value = TRUE)
+
 RegeneratingStands <- function(age, percDecid, focalWindow, pos, canopyCover, dBaseYear) {
 
   tileNum <- stringr::str_extract(age, pattern = "tile[0-9]+")
@@ -55,7 +56,7 @@ RegeneratingStands <- function(age, percDecid, focalWindow, pos, canopyCover, dB
   gc()
 
   outFile <- file.path("outputs/raw", paste0("regeneratingStand_", dBaseYear,"_", tileNum, ".tif"))
-  writeRaster(regeneratingStand, filename = outFile, datatype = "INT1U")
+  writeRaster(regeneratingStand, filename = outFile, datatype = "INT1U", overwrite = TRUE)
 
   outFile <- file.path("outputs", paste0("regeneratingStand_", dBaseYear,  "_focal", focalWindow, "_", tileNum, ".tif"))
   focalOut <- terra::focal(regeneratingStand, w = focalMatrix, sum, na.rm = TRUE, expand = FALSE,
@@ -74,10 +75,9 @@ if (runAnalysis) {
   getYear <- function(pat, List) { return(List[grep(pat, List)])}
   percDecidList2020 <- getYear(2020, percDecidList)
   ageList2020 <- getYear(2020, ageList)
-  posList2020 <- getYear(2020, posList)
   canopyCoverList2020 <- getYear(2020, canopyCoverList)
   Map(RegeneratingStands, age = ageList2020, percDecid = percDecidList2020,
-      canopyCover = canopyCoverList2020, pos = posList2020,
+      canopyCover = canopyCoverList2020, pos = posList,
       MoreArgs = list(dBaseYear = 2020, focalWindow = focalRadius))
 }
 

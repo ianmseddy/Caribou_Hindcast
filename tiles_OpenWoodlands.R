@@ -66,9 +66,8 @@ if (runAnalysis) {
   percDecidList2020 <- getYear(2020, percDecidList)
   ageList2020 <- getYear(2020, ageList)
   canopyCoverList2020 <- getYear(2020, canopyCoverList)
-  posList2020 <- getYear(2020, posList)
   Map(OpenWoodlands, age = ageList2020, canopyCover = canopyCoverList2020,
-      percDecid = percDecidList2020, pos = posList2020,
+      percDecid = percDecidList2020, pos = posList,
       MoreArgs = list(dBaseYear = 2020, focalWindow = focalRadius))
 }
 

@@ -34,8 +34,6 @@ Wetland <- function(age, landPos, lcc, canopyCover, percDecid, focalWindow, dBas
   gc()
 
 
-
-
   #include majority conifer that is open woodland (age 50+, cc <30) and all 20+ deciduous
   #exclude majority conifer that is younger than 50 or c(age 50+ and cc >30)
   percDecid <- rast(percDecid)
@@ -46,10 +44,13 @@ Wetland <- function(age, landPos, lcc, canopyCover, percDecid, focalWindow, dBas
   dt[, age := age[][dt$pixelID]]
   rm(age)
 
-  cc <- rast()
+  cc <- rast(canopyCover)
+  dt[, cc := cc[][dt$pixelID]]
+  rm(cc)
 
 
-  dt <- dt[!c(percDecid <= 50 & age > 50 & )]
+  dt <- dt[!c(percDecid <= 50 & age > 50 & cc > 30)] #this preserves open woodlands and deciduous
+  dt <- dt[]
 
   repvals <- rep(NA, times = ncell(age))
   repvals[wetland] <- 1
