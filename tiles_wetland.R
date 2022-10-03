@@ -2,7 +2,8 @@ ageList <- list.files(path = "GIS/tiles", pattern = "att_age", full.names = TRUE
   grep(., pattern = ".grd", value = TRUE)
 landPosList <- list.files(path = "GIS/tiles", pattern = "land_pos", full.names = TRUE) %>%
   grep(., pattern = ".grd", value = TRUE)
-lccList <- list.files(path = "GIS/tiles", pattern = "VegType")
+lccList <- list.files(path = "GIS/tiles", pattern = "VegType", full.names = TRUE) %>%
+  grep(., pattern = ".grd", value = TRUE)
 percDecidList <- list.files(path = "GIS/tiles", pattern = "prcD", full.names = TRUE) %>%
   grep(., pattern = ".grd", value = TRUE)
 canopyCoverList <- list.files(path = "GIS/tiles", pattern = "att_closure", full.names = TRUE) %>%
@@ -46,16 +47,16 @@ Wetland <- function(age, landPos, lcc, canopyCover, percDecid, focalWindow, dBas
 
   cc <- rast(canopyCover)
   dt[, cc := cc[][dt$pixelID]]
-  rm(cc)
 
+  dt <- dt[!c(percDecid <= 50 & age > 50 & cc > 30)] #this preserves mature coniferous
+  wetland <- dt$pixelID
+  rm(dt)
+  gc()
 
-  dt <- dt[!c(percDecid <= 50 & age > 50 & cc > 30)] #this preserves open woodlands and deciduous
-  dt <- dt[]
-
-  repvals <- rep(NA, times = ncell(age))
+  repvals <- rep(NA, times = ncell(cc))
   repvals[wetland] <- 1
-  wetland <- setValues(age, repvals)
-  rm(repvals, age)
+  wetland <- setValues(cc, repvals)
+  rm(repvals, cc)
   gc()
 
   #write the binary output
@@ -78,7 +79,7 @@ if (runAnalysis) {
   landPosList2020 <- getYear(2020, landPosList)
   ageList2020 <- getYear(2020, ageList)
   canopyCoverList2020 <- getYear(2020, canopyCoverList)
-  Map(Wetland, age = ageList2020, landPos = landPosList2020,
+  Map(Wetland, age = ageList2020, landPos = landPosList2020, lcc = lccList,
       percDecid = percDecidList2020, canopyCover = canopyCoverList2020,
       MoreArgs = list(dBaseYear = 2020, focalWindow = focalRadius))
   #1985 afer

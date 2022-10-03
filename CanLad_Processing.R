@@ -50,8 +50,6 @@ if (!all(unlist(downloadedFiles))) {
   rm(missingFiles, downloadedFiles)
 }
 
-
-
 Canada <- prepInputs(url = paste0("https://www12.statcan.gc.ca/census-recensement/2011/",
                                   "geo/bound-limit/files-fichiers/2016/lpr_000b16a_e.zip"),
                      destinationPath = "GIS",
@@ -80,13 +78,24 @@ if (length(missing) > 0) {
 
 #even at ~1/3 the original size, 8 billion pixels is too many for logical queries so I will split these into tiles
 #splitRaster is great but isn't configured for terra yet :(
-CanLadSA <- lapply(paste0("GIS/Eastern_", basename(CanLadData)), raster)
-names(CanLadSA) <- stringr::str_remove(basename(CanLadData), pattern = ".tif")
 
-if (FALSE) {
- #don't do this unless necessary
-lapply(CanLadSA, SpaDES.tools::splitRaster, nx = 3, ny = 2, buffer = c(35, 35), rType = "INT2U", path = "GIS/tiles")
+tiledFileTypes <- c("VegType", "prcD", "land_pos", "TYPE", "YR", "closure", "height", "age")
+missing <- lapply(tiledFileTypes, list.files, path = "GIS/tiles") %>%
+  lapply(., length) %>%
+  unlist(.)
+
+
+if (any(missing < 1)) {
+  missing <- tiledFileTypes[missing < 1]
+  lapply(missing, FUN = function(toProcess){
+    toTile <- raster(processed[grep(toProcess, CanLadData)])
+    Type <- ifelse(length(grep("YR", toTile)) == 1, "INT2U", "INT1U")
+    SpaDES.tools::splitRaster(toTile, nx = 3, ny = 2, buffer = c(35, 35), rType = Type, path = "GIS/tiles")
+  })
 }
+ #TODO: fix this
+ #don't do this unless necessary
+rm(CanLadSA, CanLadData, missing)
 
 #The CaNFIR and CanLAD data
 # [1] "CaNFIR_att_age_S_2020_v0-001.tif" stand age
@@ -140,6 +149,5 @@ source("tiles_regeneratingStands.R")
 #per Mathieu, wetland was Alnus spp, open (ie non forest) or flooded. Alnus is an 'unproductive' land cover class
 #therefore, 'mature conifer' that falls under wetland would still be mature conifer.
 #Our wetland will be non-forest wetland, deciduous 20+, and age 50+ conifer with cover <30%
-#
-
-
+##TODO: split the landcover class raster
+source("tiles_wetland.R")
