@@ -5,6 +5,7 @@ library(reproducible)
 library(stringr)
 library(raster)
 library(googledrive)
+library(SpaDES.tools)
 #reproducible::checkPath("cache", create = TRUE)
 options("reproducible.cachePath" = "cache")
 setDTthreads(4)
@@ -151,3 +152,16 @@ source("tiles_regeneratingStands.R")
 #Our wetland will be non-forest wetland, deciduous 20+, and age 50+ conifer with cover <30%
 ##TODO: split the landcover class raster
 source("tiles_wetland.R")
+
+covariates2020 <- c("matureConifer", "youngConifer", "openWoodland",
+                "wetland", "harvest_0to5", "harvest_6to20", "naturalDisturbance")
+#don't use lapply as we don't want 7 rasters
+lapply(covariates, FUN = function(x){
+  output <- list.files(pattern = x, path = "outputs",full.names = TRUE) %>%
+    grep(., pattern = "2020", value = TRUE) %>%
+    lapply(., raster::raster) %>%
+    mergeRaster(x = .)
+  raster::writeRaster(x = output, filename = paste0("outputs/", x, 2020, "_focal.tif"))
+  rm(output)
+  gc()
+})
