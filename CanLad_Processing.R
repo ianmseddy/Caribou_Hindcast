@@ -153,7 +153,7 @@ source("tiles_regeneratingStands.R")
 ##TODO: split the landcover class raster
 source("tiles_wetland.R")
 
-covariates2020 <- c("matureConifer", "youngConifer", "openWoodland",
+covariates2020 <- c("matureConifer", "youngConifer", "openWoodland", "regenerating",
                 "wetland", "harvest_0to5", "harvest_6to20", "naturalDisturbance")
 #don't use lapply as we don't want 7 rasters
 lapply(covariates, FUN = function(x){
@@ -161,7 +161,13 @@ lapply(covariates, FUN = function(x){
     grep(., pattern = "2020", value = TRUE) %>%
     lapply(., raster::raster) %>%
     mergeRaster(x = .)
-  raster::writeRaster(x = output, filename = paste0("outputs/", x, 2020, "_focal.tif"))
+  raster::writeRaster(x = output, filename = paste0("outputs/final/", x, 2020, "_focal.tif"))
   rm(output)
   gc()
 })
+
+output <- list.files(path = "outputs/final", pattern = ".tif$", full.names = TRUE) %>%
+  raster::stack(.)
+names(output) <- c("harvest 0 to 5", "harvest 6 to 20", "conifer 70+", "recent burn",
+                   "open woodland", "regenerating stand", "wetland", "conifer 50-70")
+quickPlot::Plot(output, title = names(output))
