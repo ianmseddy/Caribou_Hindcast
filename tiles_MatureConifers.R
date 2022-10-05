@@ -74,6 +74,14 @@ if (runAnalysis) {
   canopyCoverList2020 <- getYear(2020, canopyCoverList)
   Map(MatureConifer, age = ageList2020, canopyCover = canopyCoverList2020, percDecid = percDecidList2020,
       MoreArgs = list(dBaseYear = 2020, focalWindow = focalRadius))
+
+  percDecidList1985 <- getYear(1985, percDecidList)
+  ageList1985 <- getYear(1985, ageList)
+  canopyCoverList1985 <- getYear(1985, canopyCoverList)
+  Map(MatureConifer, age = ageList1985, canopyCover = canopyCoverList1985, percDecid = percDecidList1985,
+      MoreArgs = list(dBaseYear = 1985, focalWindow = focalRadius))
+
+
 }
 
 rm(MatureConifer)
