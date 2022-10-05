@@ -3,3 +3,5 @@
 /outputs
 .Rproj*
 temp/
+.Rproj.user
+/packages

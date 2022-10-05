@@ -1,11 +1,6 @@
-library(terra)
-library(sf)
-library(data.table)
-library(reproducible)
-library(stringr)
-library(raster)
-library(googledrive)
-library(SpaDES.tools)
+
+#options
+
 #reproducible::checkPath("cache", create = TRUE)
 options("reproducible.cachePath" = "cache")
 setDTthreads(4)
