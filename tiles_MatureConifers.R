@@ -17,8 +17,8 @@ MatureConifer <- function(age, canopyCover, percDecid, focalWindow, dBaseYear) {
   dt <- data.table(pixelID = 1:ncell(percDecid))
   dt$percDecid <- percDecid[]
 
-  #keep only pixels that are 50% or more coniferous
-  dt <- dt[percDecid < 50,]
+  #keep only pixels that are 25% or more coniferous
+  dt <- dt[percDecid < 75,]
   dt[, percDecid := NULL]
   rm(percDecid)
   gc()

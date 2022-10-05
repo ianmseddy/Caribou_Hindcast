@@ -48,7 +48,7 @@ Wetland <- function(age, landPos, lcc, canopyCover, percDecid, focalWindow, dBas
   cc <- rast(canopyCover)
   dt[, cc := cc[][dt$pixelID]]
 
-  dt <- dt[!c(percDecid <= 50 & age > 50 & cc > 30)] #this preserves mature coniferous
+  dt <- dt[!c(percDecid <= 75 & age > 50 & cc > 30)] #this preserves mature coniferous
   wetland <- dt$pixelID
   rm(dt)
   gc()
