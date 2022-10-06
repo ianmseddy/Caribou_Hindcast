@@ -1,7 +1,7 @@
 /cache
 /GIS
 /outputs
-.Rproj*
+*.Rproj
 temp/
 .Rproj.user
 /packages
