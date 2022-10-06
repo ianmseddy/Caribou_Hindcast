@@ -6,7 +6,8 @@ options("reproducible.cachePath" = "cache")
 setDTthreads(4)
 runAnalysis <- FALSE #if TRUE, will remake the GIS layers
 focalRadius <- 1000 #the radius to use for focal statistics, in metres
-
+nx = 3 #referring to tiles -
+ny = 2 #referring to tiles
 
 #cropping takes 15 minutes a layer - so write some intermediate files - reducing size by 67% (alternatively cache)
 
@@ -86,7 +87,7 @@ if (any(missing < 1)) {
   lapply(missing, FUN = function(toProcess){
     toTile <- raster(processed[grep(toProcess, CanLadData)])
     Type <- ifelse(length(grep("YR", toTile)) == 1, "INT2U", "INT1U")
-    SpaDES.tools::splitRaster(toTile, nx = 3, ny = 2, buffer = c(35, 35), rType = Type, path = "GIS/tiles")
+    SpaDES.tools::splitRaster(toTile, nx = nx, ny = ny, buffer = c(35, 35), rType = Type, path = "GIS/tiles")
   })
 }
  #TODO: fix this
