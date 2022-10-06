@@ -1,18 +1,17 @@
-library(terra)
-library(sf)
-library(data.table)
-library(reproducible)
-library(stringr)
-library(raster)
-library(googledrive)
-library(SpaDES.tools)
-#reproducible::checkPath("cache", create = TRUE)
+
+#options
+reproducible::checkPath("cache", create = TRUE)
 options("reproducible.cachePath" = "cache")
 setDTthreads(4)
 runAnalysis <- FALSE #if TRUE, will remake the GIS layers
 focalRadius <- 1000 #the radius to use for focal statistics, in metres
+nx = 3 #referring to tiles -
+ny = 2 #referring to tiles
 
-
+checkPath("data", create = TRUE)
+checkPath("outputs", create = TRUE)
+checkPath("outputs/raw", create = TRUE)
+checkPath("GIS/tiles", create = TRUE)
 #cropping takes 15 minutes a layer - so write some intermediate files - reducing size by 67% (alternatively cache)
 
 GISfiles <- list("CaNFIR_att_age_S_2020_v0.tif" =
@@ -22,7 +21,7 @@ GISfiles <- list("CaNFIR_att_age_S_2020_v0.tif" =
                  "CaNFIR_att_closure_S_2020_v0.tif" =
                    "https://drive.google.com/file/d/17e_qPKROfWsB7Wa2ObMIvtwRgk1GBsM_/view?usp=sharing",
                  "CaNFIR_att_closure_S_1985_v0.tif" =
-                   "https://drive.google.com/file/d/17FIcD9_GYOfOB2mMXtSQHoyJryl4L9vu/view?usp=sharing",
+                   "https://drive.google.com/file/d/17Cna_8zZzcFAJUoUJx9QYTPqQpTdCsXi/view?usp=sharing",
                  "CaNFIR_sps_prcD_S_2020_v0.tif" =
                    "https://drive.google.com/file/d/17PRFhPw3e26sJonTxnbU12Lw7Cmtmp3s/view?usp=sharing",
                  "CaNFIR_sps_prcD_S_1985_v0.tif" =
@@ -65,7 +64,7 @@ missing <- processed[!file.exists(processed)]
 if (length(missing) > 0) {
   inFiles <- CanLadData[processed %in% missing]
   bulkPostProcess <- function(infile, SA){
-    dType <- ifelse(basename(infile) == "CanLaD_Latest_1985_2020_YRt2.tif", "INT2U", "INT1U")
+    dType <- "INT2U" #apparently they were signed, only for the NA?
     outName <- file.path("GIS", paste0("Eastern_", basename(infile)))
     infile <- rast(infile)
     SA <- project(SA, crs(infile))
@@ -79,23 +78,24 @@ if (length(missing) > 0) {
 
 #even at ~1/3 the original size, 8 billion pixels is too many for logical queries so I will split these into tiles
 #splitRaster is great but isn't configured for terra yet :(
-
-tiledFileTypes <- c("VegType", "prcD", "land_pos", "TYPE", "YR", "closure", "height", "age")
-missing <- lapply(tiledFileTypes, list.files, path = "GIS/tiles") %>%
+#in hindsight, more tiles would be better... could parallelize
+filenamesNoExt <- basename(unlist(CanLadData)) %>%
+  stringr::str_remove(., pattern = ".tif")
+notTiled <- lapply(filenamesNoExt, list.files, path = "GIS/tiles") %>%
   lapply(., length) %>%
   unlist(.)
 
 
-if (any(missing < 1)) {
-  missing <- tiledFileTypes[missing < 1]
-  lapply(missing, FUN = function(toProcess){
-    toTile <- raster(processed[grep(toProcess, CanLadData)])
-    Type <- ifelse(length(grep("YR", toTile)) == 1, "INT2U", "INT1U")
-    SpaDES.tools::splitRaster(toTile, nx = 3, ny = 2, buffer = c(35, 35), rType = Type, path = "GIS/tiles")
+if (any(notTiled < 1)) {
+  missing <- filenamesNoExt[notTiled < 1]
+  lapply(missing, FUN = function(toTile){
+    toTile <- raster(file.path("GIS", paste0(toTile, ".tif"))) #must be raster
+    Type <- ifelse(length(grep("YR|age", toTile)) == 1, "INT2U", "INT1U") #technically 240 is max age?
+    #cc, percD, landcover, pos, all under 255
+    SpaDES.tools::splitRaster(toTile, nx = nx, ny = ny, buffer = c(35, 35), rType = Type, path = "GIS/tiles")
   })
 }
- #TODO: fix this
- #don't do this unless necessary
+
 rm(CanLadSA, CanLadData, missing)
 
 #The CaNFIR and CanLAD data
