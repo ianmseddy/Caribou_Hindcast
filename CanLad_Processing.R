@@ -79,7 +79,7 @@ if (length(missing) > 0) {
 #even at ~1/3 the original size, 8 billion pixels is too many for logical queries so I will split these into tiles
 #splitRaster is great but isn't configured for terra yet :(
 #in hindsight, more tiles would be better... could parallelize
-filenamesNoExt <- basename(unlist(CanLadData)) %>%
+filenamesNoExt <- basename(processed) %>%
   stringr::str_remove(., pattern = ".tif")
 notTiled <- lapply(filenamesNoExt, list.files, path = "GIS/tiles") %>%
   lapply(., length) %>%
