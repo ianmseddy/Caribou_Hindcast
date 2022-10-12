@@ -79,10 +79,20 @@ if (runAnalysis) {
   landPosList2020 <- getYear(2020, landPosList)
   ageList2020 <- getYear(2020, ageList)
   canopyCoverList2020 <- getYear(2020, canopyCoverList)
+  percDecidList2020 <- getYear(2020, percDecidList)
   Map(Wetland, age = ageList2020, landPos = landPosList2020, lcc = lccList,
       percDecid = percDecidList2020, canopyCover = canopyCoverList2020,
       MoreArgs = list(dBaseYear = 2020, focalWindow = focalRadius))
   #1985 afer
+  #landPos only exists for 1985, I believe?
+  ageList1985 <- getYear(1985, ageList)
+  canopyCoverList1985 <- getYear(1985, canopyCoverList)
+  percDecidList1985 <- getYear(1985, percDecidList)
+  Map(Wetland, age = ageList1985, landPos = landPosList, lcc = lccList,
+      percDecid = percDecidList1985, canopyCover = canopyCoverList1985,
+      MoreArgs = list(dBaseYear = 1985, focalWindow = focalRadius))
+
+
 }
 
 rm(Wetland)
