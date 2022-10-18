@@ -79,6 +79,13 @@ if (runAnalysis) {
   Map(RegeneratingStands, age = ageList2020, percDecid = percDecidList2020,
       canopyCover = canopyCoverList2020, pos = posList,
       MoreArgs = list(dBaseYear = 2020, focalWindow = focalRadius))
+  #1985
+  percDecidList1985 <- getYear(1985, percDecidList)
+  ageList1985 <- getYear(1985, ageList)
+  canopyCoverList1985 <- getYear(1985, canopyCoverList)
+  Map(RegeneratingStands, age = ageList1985, percDecid = percDecidList1985,
+      canopyCover = canopyCoverList1985, pos = posList,
+      MoreArgs = list(dBaseYear = 1985, focalWindow = focalRadius))
 }
 
 rm(RegeneratingStands)
