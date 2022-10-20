@@ -24,7 +24,7 @@ RecentNaturalDist <- function(dType, dYear, dBaseYear, focalWindow = focalRadius
   #easier to do the logical queries on the non-NA and then rebuild the rasters with the eventual binary values
   burnVals <- rep(NA, ncell(dYear))
   #20 = year <= dBaseYear & year + 20 > dBaseYear
-  #in 2020, a pixel that burned in 2020 would be last to qualify
+  #in 2020, a pixel that burned in 2000 would be last to qualify
   burnVals[burnDT[year <= dBaseYear & year + 20 >= dBaseYear]$pixelID] <- 1
   rm(burnDT)
   outRas <- rast(dYear)
@@ -42,8 +42,6 @@ RecentNaturalDist <- function(dType, dYear, dBaseYear, focalWindow = focalRadius
 }
 #
 if (runAnalysis) {
-  # Map(RecentNaturalDist, dType = dTypeList[3:6], dYear = dYearList[3:6],
-  #     MoreArgs = list(dBaseYear = 2005, focalWindow = focalRadius)) Not sure if we need this yet - perhaps we just use age for these
   Map(RecentNaturalDist, dType = dTypeList, dYear = dYearList,
       MoreArgs = list(dBaseYear = 2020, focalWindow = focalRadius))
 }
