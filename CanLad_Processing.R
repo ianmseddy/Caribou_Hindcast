@@ -156,18 +156,39 @@ source("tiles_wetland.R")
 covariates2020 <- c("matureConifer", "youngConifer", "openWoodland", "regenerating",
                 "wetland", "harvest_0to5", "harvest_6to20", "naturalDisturbance")
 #don't use lapply as we don't want 7 rasters
-lapply(covariates, FUN = function(x){
+
+#setValues as an intermediate step causes the raster to be in memory, blowing up RAM use to > 100 GB
+#in hindsight I should have multiplied the focal values before writing them to disk
+lapply(covariates2020, FUN = function(x){
   output <- list.files(pattern = x, path = "outputs",full.names = TRUE) %>%
     grep(., pattern = "2020", value = TRUE) %>%
-    lapply(., raster::raster) %>%
-    mergeRaster(x = .)
-  raster::writeRaster(x = output, filename = paste0("outputs/final/", x, 2020, "_focal.tif"))
+    lapply(., FUN = function(x) {raster(x) * 1000}) %>%
+    #the above line created 400 GB of rasters in my tempdrive.... lol
+    mergeRaster(.)
+  gc()
+  raster::writeRaster(x = output, filename = paste0("outputs/final/", x, 2020, "_focal.tif"),
+                      datatype = "INT2U", overwrite = TRUE)
+  #we can delete these newTiles later -
   rm(output)
   gc()
 })
 
+
+
+####plotting ### turns out we had some GIS errors as one machine used terra 1.6
+#this caused the cutline row and column to be included, so we have 2 extra cols/rows
+# output <- list.files(path = "outputs/final", pattern = ".tif$", full.names = TRUE) %>%
+#  lapply(., rast)
+# sourceNames <- sapply(output, sources)
+# covariateNames <- names(sort(sapply(covariates2020, FUN = grep, x = sourceNames)))
+# names(output) <- covariateNames
+# newMat <- crop(output$matureConifer, output$wetland)
+# writeRaster(newMat, filename = "outputs/final/matureConifer2020_focal.tif", overwrite = TRUE)
+# newYoung <- crop(output$youngConifer, output$wetland) #will have to rewrite these..
+# writeRaster(newYoung, "outputs/final/youngConifer2020_focal.tif", overwrite = TRUE)
+
 output <- list.files(path = "outputs/final", pattern = ".tif$", full.names = TRUE) %>%
   raster::stack(.)
-names(output) <- c("harvest 0 to 5", "harvest 6 to 20", "conifer 70+", "recent burn",
-                   "open woodland", "regenerating stand", "wetland", "conifer 50-70")
-quickPlot::Plot(output, title = names(output))
+quickPlot::Plot(output, title = c("harvest 0-5", "harvest 6-20", "mature Conifer",
+                                  "natural disturbance", "open woodland", "regenerating forest",
+                                  "wetland", "young Conifer"))
