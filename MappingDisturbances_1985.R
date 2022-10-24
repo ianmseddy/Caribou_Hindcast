@@ -63,7 +63,7 @@ if (FALSE) {
 
 #in hindsight, didn't need to restrict fire year to 65-85 in the rasterized version
 #also I assume 20 is valid as a regenerating stand (older than twenty..?)
-InferDisturbances <- function(NFDB, MngFor, age, baseYear = 1985, lcc, focalWindow = focalRadius) {
+InferDisturbances <- function(NFDB, MngFor, age, lcc, dBaseYear = 1985, focalWindow = focalRadius) {
   tileNum <- stringr::str_extract(age, pattern = "tile[0-9]+")
   #Non-forest pixels are 0 age, therefore I need Landcover 1985
   age <- rast(age)
@@ -97,7 +97,7 @@ InferDisturbances <- function(NFDB, MngFor, age, baseYear = 1985, lcc, focalWind
   #any disturbance that didn't ultimately regenerate to 2020 forest is already excluded
   youngHarvest <- ageDT[MngFor %in% c(50, 11, 20) & is.na(NFDB) & age < 6]$pixelID
   oldHarvest <- ageDT[MngFor %in% c(50, 11, 20) & is.na(NFDB) & age > 5]$pixelID
-  fire <- ageDT[!pixelID %in% oldHarvest & !pixelID %in% youngHarvest]$pixelID
+  fire <- ageDT[!c(pixelID %in% oldHarvest| pixelID %in% youngHarvest)]$pixelID
   rm(ageDT)
   gc()
 
@@ -141,5 +141,19 @@ InferDisturbances <- function(NFDB, MngFor, age, baseYear = 1985, lcc, focalWind
 
 }
 
+if (runAnalysis) {
 
+ NFDBlist <- list.files(path = "GIS/tiles", pattern = "NFDB", full.names = TRUE) %>%
+    grep(., pattern = ".grd", value = TRUE)
+ MngForList <- list.files(path = "GIS/tiles", pattern = "MFv2020", full.names = TRUE) %>%
+    grep(., pattern = ".grd", value = TRUE)
+ ageList <- list.files(path = "GIS/tiles", pattern = "age_S_1985", full.names = TRUE) %>%
+   grep(., pattern = ".grd", value = TRUE)
+ lccList <- list.files(path = "GIS/tiles", pattern = "VegTypeClass", full.names = TRUE) %>%
+   grep(., pattern = ".grd", value = TRUE)
+
+  Map(InferDisturbances, NFDB = NFDBlist[1:2], MngFor = MngForList[1:2],
+                         age = ageList[1:2], lcc = lccList[1:2],
+      MoreArgs = list(dBaseYear = 1985, focalWindow = focalRadius))
+}
 
