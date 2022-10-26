@@ -96,7 +96,20 @@ if (any(notTiled < 1)) {
   })
 }
 
-rm(CanLadSA, CanLadData, missing)
+rm(CanLadData, missing)
+
+####sanity check####
+files <- list.files("GIS", pattern = "tif", full.names = TRUE) %>%
+  unlist(.) %>%
+  grep(., pattern = "Eastern", value = TRUE)
+
+cellNum <- lapply(files, rast) %>%
+  lapply(., ncell)
+if (length(unlist(unique(cellNum))) > 1) {
+  stop("GIS error - unequal file size")
+}
+rm(files, cellNum)
+
 
 #The CaNFIR and CanLAD data
 # [1] "CaNFIR_att_age_S_2020_v0-001.tif" stand age
@@ -131,17 +144,7 @@ rm(CanLadSA, CanLadData, missing)
 # In order
 #1)	Identify the two mature conifer classes, age 50-70 and 70+, with canopy closure > 30%
 
-####sanity check####
-files <- list.files("GIS", pattern = "tif", full.names = TRUE) %>%
-  unlist(.) %>%
-  grep(., pattern = "Eastern", value = TRUE)
 
-cellNum <- lapply(files, rast) %>%
-  lapply(., ncell)
-if (length(unlist(unique(cellNum))) > 2) {
-  stop("GIS error - unequal file size")
-}
-rm(files, cellNum)
 
 source("tiles_MatureConifers.R")
 #2)	Identify the natural disturbances < 20 y.o
