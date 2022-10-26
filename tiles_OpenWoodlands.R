@@ -6,13 +6,14 @@ percDecidList <- list.files(path = "GIS/tiles", pattern = "prcD", full.names = T
   grep(., pattern = ".grd", value = TRUE)
 posList <- list.files(path = "GIS/tiles", pattern = "pos", full.names = TRUE) %>%
   grep(., pattern = ".grd", value = TRUE)
-OpenWoodlands <- function(age, canopyCover, percDecid, pos, focalWindow, dBaseYear) {
+
+OpenWoodlands <- function(age, canopyCover, percDecid, pos, dBaseYear) {
 
   tileNum <- stringr::str_extract(age, pattern = "tile[0-9]+")
 
   #create focal matrix for use later
   percDecid <- rast(percDecid)
-  focalMatrix <- terra::focalMat(x = percDecid, d = focalWindow, type = "circle")
+  # focalMatrix <- terra::focalMat(x = percDecid, d = focalWindow, type = "circle")
 
   dt <- data.table(pixelID = 1:ncell(percDecid))
   dt$percDecid <- percDecid[]
@@ -51,9 +52,9 @@ OpenWoodlands <- function(age, canopyCover, percDecid, pos, focalWindow, dBaseYe
   outFile <- file.path("outputs/raw", paste0("openWoodland", dBaseYear,"_", tileNum, ".tif"))
   writeRaster(openWoodland, filename = outFile, datatype = "INT1U", overwrite = TRUE)
 
-  outFile <- file.path("outputs", paste0("openWoodland_", dBaseYear,  "_focal", focalWindow, "_", tileNum, ".tif"))
-  focalOut <- terra::focal(openWoodland, w = focalMatrix, sum, na.rm = TRUE, expand = FALSE,
-                           filename = outFile, overwrite = TRUE)
+  # outFile <- file.path("outputs", paste0("openWoodland_", dBaseYear,  "_focal", focalWindow, "_", tileNum, ".tif"))
+  # focalOut <- terra::focal(openWoodland, w = focalMatrix, sum, na.rm = TRUE, expand = FALSE,
+  #                          filename = outFile, overwrite = TRUE)
   rm(openWoodland)
   gc()
 
@@ -68,7 +69,7 @@ if (runAnalysis) {
   canopyCoverList2020 <- getYear(2020, canopyCoverList)
   Map(OpenWoodlands, age = ageList2020, canopyCover = canopyCoverList2020,
       percDecid = percDecidList2020, pos = posList,
-      MoreArgs = list(dBaseYear = 2020, focalWindow = focalRadius))
+      MoreArgs = list(dBaseYear = 2020))
 
   #1985
   percDecidList1985 <- getYear(1985, percDecidList)
@@ -76,7 +77,7 @@ if (runAnalysis) {
   canopyCoverList1985 <- getYear(1985, canopyCoverList)
   Map(OpenWoodlands, age = ageList1985, canopyCover = canopyCoverList1985,
       percDecid = percDecidList1985, pos = posList,
-      MoreArgs = list(dBaseYear = 1985, focalWindow = focalRadius))
+      MoreArgs = list(dBaseYear = 1985))
 }
 
 rm(OpenWoodlands)

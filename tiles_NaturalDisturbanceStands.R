@@ -7,7 +7,7 @@ dYearList <- list.files(path = "GIS/tiles", pattern = "1985_2020_YRt2", full.nam
   grep(., pattern = ".grd", value = TRUE)
 
 
-RecentNaturalDist <- function(dType, dYear, dBaseYear, focalWindow = focalRadius){
+RecentNaturalDist <- function(dType, dYear, dBaseYear){
 
   tileNum <- stringr::str_extract(dType, pattern = "tile[0-9]+")
   dType <- rast(dType)
@@ -32,12 +32,12 @@ RecentNaturalDist <- function(dType, dYear, dBaseYear, focalWindow = focalRadius
 
   outFile <- file.path("outputs/raw", paste0("naturalDisturbance", dBaseYear,"_", tileNum, ".tif"))
   writeRaster(outRas, filename = outFile, datatype = "INT1U")
-  focalMatrix <- terra::focalMat(x = outRas, d = focalWindow, type = "circle")
-  outFile <- file.path("outputs", paste0("naturalDisturbance", dBaseYear,  "_focal", focalWindow, "_", tileNum, ".tif"))
-  focalOut <- terra::focal(outRas, w = focalMatrix, sum, na.rm = TRUE, expand = FALSE,
-                           filename = outFile, overwrite = TRUE)
+  # focalMatrix <- terra::focalMat(x = outRas, d = focalWindow, type = "circle")
+  # outFile <- file.path("outputs", paste0("naturalDisturbance", dBaseYear,  "_focal", focalWindow, "_", tileNum, ".tif"))
+  # focalOut <- terra::focal(outRas, w = focalMatrix, sum, na.rm = TRUE, expand = FALSE,
+  #                          filename = outFile, overwrite = TRUE)
   #recording focal window size in filename in case it changes.
-  rm(outRas, focalOut)
+  rm(outRas)
   gc()
 }
 #

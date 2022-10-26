@@ -6,13 +6,13 @@ ageList <- list.files(path = "GIS/tiles", pattern = "att_age", full.names = TRUE
 percDecidList <- list.files(path = "GIS/tiles", pattern = "prcD", full.names = TRUE) %>%
   grep(., pattern = ".grd", value = TRUE)
 
-MatureConifer <- function(age, canopyCover, percDecid, focalWindow, dBaseYear) {
+MatureConifer <- function(age, canopyCover, percDecid, dBaseYear) {
 
   tileNum <- stringr::str_extract(age, pattern = "tile[0-9]+")
 
   #create focal matrix for use later
   percDecid <- rast(percDecid)
-  focalMatrix <- terra::focalMat(x = percDecid, d = focalWindow, type = "circle")
+  # focalMatrix <- terra::focalMat(x = percDecid, d = focalWindow, type = "circle")
 
   dt <- data.table(pixelID = 1:ncell(percDecid))
   dt$percDecid <- percDecid[]
@@ -43,9 +43,9 @@ MatureConifer <- function(age, canopyCover, percDecid, focalWindow, dBaseYear) {
   rm(repvals)
   outFile <- file.path("outputs/raw", paste0("youngConifer", dBaseYear,"_", tileNum, ".tif"))
   writeRaster(youngConifer, filename = outFile, datatype = "INT1U", overwrite = TRUE)
-  outFile <- file.path("outputs", paste0("youngConifer_", dBaseYear,  "_focal", focalWindow, "_", tileNum, ".tif"))
-  focalOut <- terra::focal(youngConifer, w = focalMatrix, sum, na.rm = TRUE, expand = FALSE,
-                           filename = outFile, overwrite = TRUE)
+  # outFile <- file.path("outputs", paste0("youngConifer_", dBaseYear,  "_focal", focalWindow, "_", tileNum, ".tif"))
+  # focalOut <- terra::focal(youngConifer, w = focalMatrix, sum, na.rm = TRUE, expand = FALSE,
+  #                          filename = outFile, overwrite = TRUE)
   rm(youngConifer)
   gc()
 
@@ -56,9 +56,9 @@ MatureConifer <- function(age, canopyCover, percDecid, focalWindow, dBaseYear) {
   rm(repvals)
   outFile <- file.path("outputs/raw", paste0("matureConifer", dBaseYear,"_", tileNum, ".tif"))
   writeRaster(oldConifer, filename = outFile, datatype = "INT1U")
-  outFile <- file.path("outputs", paste0("matureConifer_", dBaseYear,  "_focal", focalWindow, "_", tileNum, ".tif"))
-  focalOut <- terra::focal(oldConifer, w = focalMatrix, sum, na.rm = TRUE, expand = FALSE,
-                           filename = outFile, overwrite = TRUE)
+  # outFile <- file.path("outputs", paste0("matureConifer_", dBaseYear,  "_focal", focalWindow, "_", tileNum, ".tif"))
+  # focalOut <- terra::focal(oldConifer, w = focalMatrix, sum, na.rm = TRUE, expand = FALSE,
+  #                          filename = outFile, overwrite = TRUE)
   rm(oldConifer)
   for (i in 1:3) gc() #terra really hangs on for some reason
 
@@ -73,15 +73,13 @@ if (runAnalysis) {
   ageList2020 <- getYear(2020, ageList)
   canopyCoverList2020 <- getYear(2020, canopyCoverList)
   Map(MatureConifer, age = ageList2020, canopyCover = canopyCoverList2020, percDecid = percDecidList2020,
-      MoreArgs = list(dBaseYear = 2020, focalWindow = focalRadius))
+      MoreArgs = list(dBaseYear = 2020))
 
   percDecidList1985 <- getYear(1985, percDecidList)
   ageList1985 <- getYear(1985, ageList)
   canopyCoverList1985 <- getYear(1985, canopyCoverList)
   Map(MatureConifer, age = ageList1985, canopyCover = canopyCoverList1985, percDecid = percDecidList1985,
-      MoreArgs = list(dBaseYear = 1985, focalWindow = focalRadius))
-
-
+      MoreArgs = list(dBaseYear = 1985))
 }
 
 rm(MatureConifer)

@@ -9,13 +9,13 @@ percDecidList <- list.files(path = "GIS/tiles", pattern = "prcD", full.names = T
 canopyCoverList <- list.files(path = "GIS/tiles", pattern = "att_closure", full.names = TRUE) %>%
   grep(., pattern = ".grd", value = TRUE)
 
-Wetland <- function(age, landPos, lcc, canopyCover, percDecid, focalWindow, dBaseYear) {
+Wetland <- function(age, landPos, lcc, canopyCover, percDecid, dBaseYear) {
 
   tileNum <- stringr::str_extract(age, pattern = "tile[0-9]+")
 
   #create focal matrix for use later
   landPos <- rast(landPos)
-  focalMatrix <- terra::focalMat(x = landPos, d = focalWindow, type = "circle")
+  # focalMatrix <- terra::focalMat(x = landPos, d = focalWindow, type = "circle")
 
   #create dt for indexing
   dt <- data.table(pixelID = 1:ncell(landPos))
@@ -63,9 +63,9 @@ Wetland <- function(age, landPos, lcc, canopyCover, percDecid, focalWindow, dBas
   outFile <- file.path("outputs/raw", paste0("wetland", dBaseYear,"_", tileNum, ".tif"))
   writeRaster(wetland, filename = outFile, datatype = "INT1U", overwrite = TRUE)
 
-  outFile <- file.path("outputs", paste0("wetland_", dBaseYear,  "_focal", focalWindow, "_", tileNum, ".tif"))
-  focalOut <- terra::focal(wetland, w = focalMatrix, sum, na.rm = TRUE, expand = FALSE,
-                           filename = outFile, overwrite = TRUE)
+  # outFile <- file.path("outputs", paste0("wetland_", dBaseYear,  "_focal", focalWindow, "_", tileNum, ".tif"))
+  # focalOut <- terra::focal(wetland, w = focalMatrix, sum, na.rm = TRUE, expand = FALSE,
+  #                          filename = outFile, overwrite = TRUE)
   rm(wetland)
   gc()
 
@@ -82,7 +82,7 @@ if (runAnalysis) {
   percDecidList2020 <- getYear(2020, percDecidList)
   Map(Wetland, age = ageList2020, landPos = landPosList2020, lcc = lccList,
       percDecid = percDecidList2020, canopyCover = canopyCoverList2020,
-      MoreArgs = list(dBaseYear = 2020, focalWindow = focalRadius))
+      MoreArgs = list(dBaseYear = 2020))
   #1985 afer
   #landPos only exists for 1985, I believe?
   ageList1985 <- getYear(1985, ageList)
@@ -90,7 +90,7 @@ if (runAnalysis) {
   percDecidList1985 <- getYear(1985, percDecidList)
   Map(Wetland, age = ageList1985, landPos = landPosList, lcc = lccList,
       percDecid = percDecidList1985, canopyCover = canopyCoverList1985,
-      MoreArgs = list(dBaseYear = 1985, focalWindow = focalRadius))
+      MoreArgs = list(dBaseYear = 1985))
 
 
 }

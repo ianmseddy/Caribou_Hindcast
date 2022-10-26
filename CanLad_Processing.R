@@ -130,6 +130,19 @@ rm(CanLadSA, CanLadData, missing)
 
 # In order
 #1)	Identify the two mature conifer classes, age 50-70 and 70+, with canopy closure > 30%
+
+####sanity check####
+files <- list.files("GIS", pattern = "tif", full.names = TRUE) %>%
+  unlist(.) %>%
+  grep(., pattern = "Eastern", value = TRUE)
+
+cellNum <- lapply(files, rast) %>%
+  lapply(., ncell)
+if (length(unlist(unique(cellNum))) > 2) {
+  stop("GIS error - unequal file size")
+}
+rm(files, cellNum)
+
 source("tiles_MatureConifers.R")
 #2)	Identify the natural disturbances < 20 y.o
 source("tiles_NaturalDisturbanceStands.R")

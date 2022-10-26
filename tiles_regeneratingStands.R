@@ -8,13 +8,13 @@ posList <- list.files(path = "GIS/tiles", pattern = "pos", full.names = TRUE) %>
 canopyCoverList <- list.files(path = "GIS/tiles", pattern = "att_closure", full.names = TRUE) %>%
   grep(., pattern = ".grd", value = TRUE)
 
-RegeneratingStands <- function(age, percDecid, focalWindow, pos, canopyCover, dBaseYear) {
+RegeneratingStands <- function(age, percDecid, pos, canopyCover, dBaseYear) {
 
   tileNum <- stringr::str_extract(age, pattern = "tile[0-9]+")
 
   #create focal matrix for use later
   age <- rast(age)
-  focalMatrix <- terra::focalMat(x = age, d = focalWindow, type = "circle")
+  # focalMatrix <- terra::focalMat(x = age, d = focalWindow, type = "circle")
 
   #create dt for indexing
   dt <- data.table(pixelID = 1:ncell(age))
@@ -58,9 +58,9 @@ RegeneratingStands <- function(age, percDecid, focalWindow, pos, canopyCover, dB
   outFile <- file.path("outputs/raw", paste0("regeneratingStand_", dBaseYear,"_", tileNum, ".tif"))
   writeRaster(regeneratingStand, filename = outFile, datatype = "INT1U", overwrite = TRUE)
 
-  outFile <- file.path("outputs", paste0("regeneratingStand_", dBaseYear,  "_focal", focalWindow, "_", tileNum, ".tif"))
-  focalOut <- terra::focal(regeneratingStand, w = focalMatrix, sum, na.rm = TRUE, expand = FALSE,
-                           filename = outFile, overwrite = TRUE)
+  # outFile <- file.path("outputs", paste0("regeneratingStand_", dBaseYear,  "_focal", focalWindow, "_", tileNum, ".tif"))
+  # focalOut <- terra::focal(regeneratingStand, w = focalMatrix, sum, na.rm = TRUE, expand = FALSE,
+  #                          filename = outFile, overwrite = TRUE)
   rm(regeneratingStand)
   gc()
 
@@ -78,14 +78,14 @@ if (runAnalysis) {
   canopyCoverList2020 <- getYear(2020, canopyCoverList)
   Map(RegeneratingStands, age = ageList2020, percDecid = percDecidList2020,
       canopyCover = canopyCoverList2020, pos = posList,
-      MoreArgs = list(dBaseYear = 2020, focalWindow = focalRadius))
+      MoreArgs = list(dBaseYear = 2020))
   #1985
   percDecidList1985 <- getYear(1985, percDecidList)
   ageList1985 <- getYear(1985, ageList)
   canopyCoverList1985 <- getYear(1985, canopyCoverList)
   Map(RegeneratingStands, age = ageList1985, percDecid = percDecidList1985,
       canopyCover = canopyCoverList1985, pos = posList,
-      MoreArgs = list(dBaseYear = 1985, focalWindow = focalRadius))
+      MoreArgs = list(dBaseYear = 1985))
 }
 
 rm(RegeneratingStands)
