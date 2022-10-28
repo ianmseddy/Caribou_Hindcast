@@ -3,7 +3,7 @@
 # would be 2005 (ie in 1985 we do not know stands <20 y.o. originated from fire or harvest)
 dTypeList <- list.files(path = "GIS/tiles", pattern = "1985_2020_TYPE", full.names = TRUE) %>%
   grep(., pattern = ".grd", value = TRUE)
-dYearList <- list.files(path = "GIS/tiles", pattern = "1985_2020_YRt2", full.names = TRUE) %>%
+dYearList <- list.files(path = "GIS/tiles", pattern = "1985_2020_YRT2", full.names = TRUE) %>%
   grep(., pattern = ".grd", value = TRUE)
 
 
@@ -43,5 +43,5 @@ RecentNaturalDist <- function(dType, dYear, dBaseYear){
 #
 if (runAnalysis) {
   Map(RecentNaturalDist, dType = dTypeList, dYear = dYearList,
-      MoreArgs = list(dBaseYear = 2020, focalWindow = focalRadius))
+      MoreArgs = list(dBaseYear = 2020))
 }

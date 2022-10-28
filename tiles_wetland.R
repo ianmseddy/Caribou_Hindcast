@@ -13,8 +13,16 @@ Wetland <- function(age, landPos, lcc, canopyCover, percDecid, dBaseYear) {
 
   tileNum <- stringr::str_extract(age, pattern = "tile[0-9]+")
 
-  #create focal matrix for use later
   landPos <- rast(landPos)
+  #sanity check
+  canopyCover1 <- rast(canopyCover)
+  percDecid1 <- rast(percDecid)
+  age1 <- rast(age)
+  lcc1 <- rast(lcc)
+  compareGeom(landPos, canopyCover1, percDecid1) #evidently you can't compare >3 rasters...
+  compareGeom(landPos, age1, lcc1)
+  rm(canopyCover1, percDecid1, age1, lcc1)
+
   # focalMatrix <- terra::focalMat(x = landPos, d = focalWindow, type = "circle")
 
   #create dt for indexing
@@ -88,8 +96,8 @@ if (runAnalysis) {
   ageList1985 <- getYear(1985, ageList)
   canopyCoverList1985 <- getYear(1985, canopyCoverList)
   percDecidList1985 <- getYear(1985, percDecidList)
-  Map(Wetland, age = ageList1985, landPos = landPosList, lcc = lccList,
-      percDecid = percDecidList1985, canopyCover = canopyCoverList1985,
+  Map(Wetland, age = ageList1985[4:6], landPos = landPosList[4:6], lcc = lccList[4:6],
+      percDecid = percDecidList1985[4:6], canopyCover = canopyCoverList1985[4:6],
       MoreArgs = list(dBaseYear = 1985))
 
 

@@ -40,14 +40,16 @@ if (FALSE) {
   rm(ManagedForest)
 
   #might as well prep the NFDB in advance
-  NFDB <- prepInputs(url = "https://cwfis.cfs.nrcan.gc.ca/downloads/nfdb/fire_poly/current_version/NFDB_poly.zip",
-                     destinationPath = "GIS", fun = "st_read")
+  NFDB <- Cache(prepInputs,
+                url = "https://cwfis.cfs.nrcan.gc.ca/downloads/nfdb/fire_poly/current_version/NFDB_poly.zip",
+                destinationPath = "GIS", fun = "st_read",
+                userTags = c("NFDB"))
   NFDB <- NFDB[NFDB$YEAR > 1964 & NFDB$YEAR < 1986,]
   NFDB <- sf::st_transform(NFDB, crs = st_crs(ageRTM))
 
   NFDBras <- fasterize(NFDB, raster = ageRTM, field = "YEAR")
 
-  writeRaster(NFDBras, "GIS/NFBD_raster_1965_1985.tif")
+  writeRaster(NFDBras, "GIS/NFBD_raster_1965_1985.tif", overwrite = TRUE)
   rm(NFDBRas)
   NFDBras <- raster("GIS/NFDB_raster_1965_1985.tif") #this was 60 GB  in RAM
   #tile the NFDB
@@ -55,7 +57,7 @@ if (FALSE) {
   if (length(mfTiles) < 1) {
     names(NFDBras) <- "Eastern_NFDB"
     SpaDES.tools::splitRaster(NFDBras, nx = nx, ny = ny, buffer = c(35, 35),
-                              rType = "INT1U", path = "GIS/tiles")
+                              rType = "INT2U", path = "GIS/tiles")
 
   }
 
@@ -63,12 +65,19 @@ if (FALSE) {
 
 #in hindsight, didn't need to restrict fire year to 65-85 in the rasterized version
 #also I assume 20 is valid as a regenerating stand (older than twenty..?)
-InferDisturbances <- function(NFDB, MngFor, age, lcc, dBaseYear = 1985, focalWindow = focalRadius) {
+InferDisturbances <- function(NFDB, MngFor, age, lcc, dBaseYear = 1985) {
   tileNum <- stringr::str_extract(age, pattern = "tile[0-9]+")
   #Non-forest pixels are 0 age, therefore I need Landcover 1985
   age <- rast(age)
-  focalMatrix <- terra::focalMat(x = age, d = focalWindow, type = "circle")
+  #sanity check
+  NFDB1 <- rast(NFDB)
+  MngFor1 <- rast(MngFor)
+  lcc1 <- rast(lcc)
+  compareGeom(NFDB1, age, lcc1)
+  compareGeom(lcc1, MngFor1)
+  rm(NFDB1, MngFor1, lcc1)
 
+  # focalMatrix <- terra::focalMat(x = age, d = focalWindow, type = "circle")
 
   ageDT <- data.table(age = values(age), pixelID = 1:ncell(age))
   rm(age)
@@ -78,7 +87,8 @@ InferDisturbances <- function(NFDB, MngFor, age, lcc, dBaseYear = 1985, focalWin
   #drop non-forest as these are age zero
   lcc <- rast(lcc)
   ageDT[, lcc := lcc[][ageDT$pixelID]] #get landcover
-  ageDT <- ageDT[lcc < 8 & lcc > 7,]
+  ageDT <- ageDT[lcc < 8 & lcc > 4,] #we will only include 2020 forest.
+  #this means forest under 20 years of age that is non-forest in 2020 is ignored
   ageDT[, lcc := NULL]
   rm(lcc)
   gc()
@@ -108,11 +118,11 @@ InferDisturbances <- function(NFDB, MngFor, age, lcc, dBaseYear = 1985, focalWin
   gc()# for data.table overwrite
   outFile <- file.path("outputs/raw", paste0("naturalDisturbance", dBaseYear,"_", tileNum, ".tif"))
   writeRaster(fire, filename = outFile, datatype = "INT1U", overwrite = TRUE)
-  outFile <- file.path("outputs", paste0("naturalDisturbance_", dBaseYear,  "_focal", focalWindow, "_", tileNum, ".tif"))
-  focalOut <- terra::focal(fire, w = focalMatrix, sum, na.rm = TRUE, expand = FALSE,
-                           filename = outFile, overwrite = TRUE)
+  # outFile <- file.path("outputs", paste0("naturalDisturbance_", dBaseYear,  "_focal", focalWindow, "_", tileNum, ".tif"))
+  # focalOut <- terra::focal(fire, w = focalMatrix, sum, na.rm = TRUE, expand = FALSE,
+  #                          filename = outFile, overwrite = TRUE)
 
-  rm(fire, fireRepVals, focalOut)
+  rm(fire, fireRepVals)
   gc()
 
   #write the young harvest
@@ -121,10 +131,10 @@ InferDisturbances <- function(NFDB, MngFor, age, lcc, dBaseYear = 1985, focalWin
   youngHarvest <- setValues(NFDB, harvestRepVals)
   outFile <- file.path("outputs/raw", paste0("harvest_0to5_", dBaseYear,"_", tileNum, ".tif"))
   writeRaster(youngHarvest, filename = outFile, datatype = "INT1U", overwrite = TRUE)
-  outFile <- file.path("outputs", paste0("harvest_0to5_", dBaseYear,  "_focal", focalWindow, "_", tileNum, ".tif"))
-  youngFocal <- terra::focal(youngHarvest, w = focalMatrix, fun = sum, na.rm = TRUE, expand = FALSE,
-                             filename = outFile, overwrite = TRUE)
-  rm(youngHarvest, youngFocal, harvestRepVals)
+  # outFile <- file.path("outputs", paste0("harvest_0to5_", dBaseYear,  "_focal", focalWindow, "_", tileNum, ".tif"))
+  # youngFocal <- terra::focal(youngHarvest, w = focalMatrix, fun = sum, na.rm = TRUE, expand = FALSE,
+  #                            filename = outFile, overwrite = TRUE)
+  rm(youngHarvest, harvestRepVals)
   gc()
 
   #write the older harvest
@@ -133,10 +143,10 @@ InferDisturbances <- function(NFDB, MngFor, age, lcc, dBaseYear = 1985, focalWin
   oldHarvest <- setValues(NFDB, harvestRepVals)
   outFile <- file.path("outputs/raw", paste0("harvest_6to20_", dBaseYear,"_", tileNum, ".tif"))
   writeRaster(oldHarvest, filename = outFile, datatype = "INT1U", overwrite = TRUE)
-  outFile <- file.path("outputs", paste0("harvest_6to20_", dBaseYear,  "_focal", focalWindow, "_", tileNum, ".tif"))
-  oldFocal <- terra::focal(oldHarvest, w = focalMatrix, fun = sum, na.rm = TRUE, expand = FALSE,
-                             filename = outFile, overwrite = TRUE)
-  rm(oldHarvest, oldFocal, harvestRepVals, NFDB)
+  # outFile <- file.path("outputs", paste0("harvest_6to20_", dBaseYear,  "_focal", focalWindow, "_", tileNum, ".tif"))
+  # oldFocal <- terra::focal(oldHarvest, w = focalMatrix, fun = sum, na.rm = TRUE, expand = FALSE,
+  #                            filename = outFile, overwrite = TRUE)
+  rm(oldHarvest, harvestRepVals, NFDB)
   gc()
 
 }
@@ -152,8 +162,8 @@ if (runAnalysis) {
  lccList <- list.files(path = "GIS/tiles", pattern = "VegTypeClass", full.names = TRUE) %>%
    grep(., pattern = ".grd", value = TRUE)
 
-  Map(InferDisturbances, NFDB = NFDBlist[1:2], MngFor = MngForList[1:2],
-                         age = ageList[1:2], lcc = lccList[1:2],
-      MoreArgs = list(dBaseYear = 1985, focalWindow = focalRadius))
+  Map(InferDisturbances, NFDB = NFDBlist, MngFor = MngForList,
+                         age = ageList, lcc = lccList,
+      MoreArgs = list(dBaseYear = 1985))
 }
 

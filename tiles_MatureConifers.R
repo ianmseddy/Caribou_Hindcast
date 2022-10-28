@@ -10,9 +10,12 @@ MatureConifer <- function(age, canopyCover, percDecid, dBaseYear) {
 
   tileNum <- stringr::str_extract(age, pattern = "tile[0-9]+")
 
-  #create focal matrix for use later
   percDecid <- rast(percDecid)
-  # focalMatrix <- terra::focalMat(x = percDecid, d = focalWindow, type = "circle")
+  #sanity check
+  canopyCover1 <- rast(canopyCover)
+  age1 <- rast(age)
+  compareGeom(percDecid, canopyCover1, age1)
+  rm(canopyCover1, age1)
 
   dt <- data.table(pixelID = 1:ncell(percDecid))
   dt$percDecid <- percDecid[]
