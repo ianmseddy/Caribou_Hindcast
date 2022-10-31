@@ -24,7 +24,7 @@ RegeneratingStands <- function(age, percDecid, pos, canopyCover, dBaseYear) {
   rm(age)
   gc()
 
-  #pixels that are 50% or more confierous will fall into woodland, mature conifer
+  #pixels that are 25% or more coniferous will fall into woodland, mature conifer
   #so keep all deciduous or young coniferous
   percDecid <- rast(percDecid)
   dt[, percDecid := percDecid[][dt$pixelID]]
@@ -32,16 +32,15 @@ RegeneratingStands <- function(age, percDecid, pos, canopyCover, dBaseYear) {
   pos <- rast(pos)
   dt[, pos := pos[][dt$pixelID]]
 
-  #dedicudous wetland is wetland, regardless of age and canopy cover
-  dt <- dt[!c(percDecid > 50 & pos == 5)]
-
+  #any wetland is not regenerating stand (it may be mature conifer or disturbed or wetland)
+  dt <- dt[!pos == 5]
   rm(pos)
   dt[, pos := NULL]
 
   canopyCover <- rast(canopyCover)
   dt[, cc := canopyCover[][dt$pixelID]]
 
-  #assume age 50+ with cover below 30 is either a woodland or wetland and will not regenerate to forest
+  #assume age 50+ with cover below 30 is wetland or woodland, and won't regenerate to forest
   #this excludes deciduous woodlands (along with e.g. grassland)
   dt <- dt[!c(age > 50 & cc < 30)]
 

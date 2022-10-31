@@ -1,7 +1,7 @@
 
 dTypeList <- list.files(path = "GIS/tiles", pattern = "1985_2020_TYPE", full.names = TRUE) %>%
   grep(., pattern = ".grd", value = TRUE)
-dYearList <- list.files(path = "GIS/tiles", pattern = "1985_2020_YRt2", full.names = TRUE) %>%
+dYearList <- list.files(path = "GIS/tiles", pattern = "1985_2020_YRT2", full.names = TRUE) %>%
   grep(., pattern = ".grd", value = TRUE)
 
 ####cut blocks age 0-5 and 6-20 ####
@@ -9,6 +9,8 @@ RecentCutBlocks <- function(dType, dYear, dBaseYear) {
   tileNum <- stringr::str_extract(dType, pattern = "tile[0-9]+")
   dType = rast(dType)
   dYear = rast(dYear)
+  compareGeom(dType, dYear)
+
   harvestDT = data.table(1:ncell(dType),
                          values(dType))
   names(harvestDT) <- c("pixelID", "harvest")
@@ -41,7 +43,7 @@ RecentCutBlocks <- function(dType, dYear, dBaseYear) {
   oldHarvestValues[harvestDT[isOld == TRUE,]$pixelID] <- 1
   youngHarvest <- setValues(youngHarvest, oldHarvestValues)
   oldHarvestFile <- file.path("outputs/raw", paste0("harvest_6to20_", dBaseYear, "_", tileNum, ".tif"))
-  writRaster(youngHarest, oldHarvestFile, overwrite = TRUE)
+  writeRaster(youngHarvest, oldHarvestFile, overwrite = TRUE)
   # oldFocal <- terra::focal(youngHarvest, w = focalMatrix, fun = sum, na.rm = TRUE,
   #                          expand = FALSE, filename = oldFocalFile, overwrite = TRUE)
 
@@ -53,7 +55,7 @@ RecentCutBlocks <- function(dType, dYear, dBaseYear) {
 if (runAnalysis) {
   # Map(RecentCutBlocks, dType = dTypeList, dYear = dYearList,
   #     MoreArgs = list(dBaseYear = 2005, focalWindow = focalRadius))
-  Map(RecentCutBlocks, dType = dTypeList[4:6], dYear = dYearList[4:6],
+  Map(RecentCutBlocks, dType = dTypeList, dYear = dYearList,
       MoreArgs = list(dBaseYear = 2020))
 }
 

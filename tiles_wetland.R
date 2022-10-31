@@ -45,6 +45,8 @@ Wetland <- function(age, landPos, lcc, canopyCover, percDecid, dBaseYear) {
 
   #include majority conifer that is open woodland (age 50+, cc <30) and all 20+ deciduous
   #exclude majority conifer that is younger than 50 or c(age 50+ and cc >30)
+  #this will include disturbed forest and regenerating forest and must be masked later
+  #since wetland may or may not have an associated age...
   percDecid <- rast(percDecid)
   dt[, percDecid := percDecid[][dt$pixelID]]
   rm(percDecid)
@@ -56,7 +58,7 @@ Wetland <- function(age, landPos, lcc, canopyCover, percDecid, dBaseYear) {
   cc <- rast(canopyCover)
   dt[, cc := cc[][dt$pixelID]]
 
-  dt <- dt[!c(percDecid <= 75 & age > 50 & cc > 30)] #this preserves mature coniferous
+  dt <- dt[!c(percDecid <= 75 & age >= 50 & cc >= 30)] #this preserves mature coniferous
   wetland <- dt$pixelID
   rm(dt)
   gc()
@@ -96,8 +98,8 @@ if (runAnalysis) {
   ageList1985 <- getYear(1985, ageList)
   canopyCoverList1985 <- getYear(1985, canopyCoverList)
   percDecidList1985 <- getYear(1985, percDecidList)
-  Map(Wetland, age = ageList1985[4:6], landPos = landPosList[4:6], lcc = lccList[4:6],
-      percDecid = percDecidList1985[4:6], canopyCover = canopyCoverList1985[4:6],
+  Map(Wetland, age = ageList1985, landPos = landPosList, lcc = lccList,
+      percDecid = percDecidList1985, canopyCover = canopyCoverList1985,
       MoreArgs = list(dBaseYear = 1985))
 
 
