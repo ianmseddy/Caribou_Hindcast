@@ -24,14 +24,14 @@ missingRegen <- function(age, lcc, dYear, dBaseYear = 2020) {
 
 
   #create dt for indexing
-  dt <- data.table(pixelID := 1:ncell(lcc))
+  dt <- data.table(pixelID = 1:ncell(lcc))
   dt[, lcc := lcc[]]
   dt <- dt[lcc %in% c(5,6,7),]
+  dt[, lcc := NULL]
   gc()
 
   dt[, age := age[][dt$pixelID]]
-  dt <- dt[age] #remove open water wetland
-  dt[, lcc := NULL]
+  dt <- dt[age <= 20,] #remove open water wetland
   rm(lcc, age)
   gc()
 

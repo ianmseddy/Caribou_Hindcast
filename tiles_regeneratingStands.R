@@ -54,7 +54,7 @@ RegeneratingStands <- function(age, percDecid, pos, canopyCover, dBaseYear) {
   rm(repvals, percDecid)
   gc()
 
-  outFile <- file.path("outputs/raw", paste0("regeneratingStand_", dBaseYear,"_", tileNum, ".tif"))
+  outFile <- file.path("outputs/raw", paste0("regeneratingStand", dBaseYear,"_", tileNum, ".tif"))
   writeRaster(regeneratingStand, filename = outFile, datatype = "INT1U", overwrite = TRUE)
 
   # outFile <- file.path("outputs", paste0("regeneratingStand_", dBaseYear,  "_focal", focalWindow, "_", tileNum, ".tif"))
