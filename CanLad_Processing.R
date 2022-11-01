@@ -7,6 +7,8 @@ runAnalysis <- FALSE #if TRUE, will remake the GIS layers
 focalRadius <- 1000 #the radius to use for focal statistics, in metres
 nx = 3 #referring to tiles -
 ny = 2 #referring to tiles
+getYear <- function(pat, List) { return(List[grep(pat, List)])}
+
 
 checkPath("data", create = TRUE)
 checkPath("outputs", create = TRUE)
@@ -156,8 +158,9 @@ source("tiles_HarvestedStands.R")
 #this assumse that ages and disturbances are consistent
 source("tiles_OpenWoodlands.R")
 
-#5)	Identify Regenerating Stands: any stands > 20 years that aren’t conifer 50+ (ie none of the above classes)
+#5)	Identify Regenerating Stands: any stands that aren't one of the above classes.
 #this class includes majority-conifer pixels that are 21-49 years of age, and deciduous stands age 20+ that aren't wetland.
+#it also includes pixels that are younger than 20 but not disturbed, this class was identified afterward.
 #some of these deciduous 20+ may be wetland - these will be classified as wetland instead
 #since disturbance supersedes all - must check that the 20-50 are also undisturbed..
 source("tiles_regeneratingStands.R")

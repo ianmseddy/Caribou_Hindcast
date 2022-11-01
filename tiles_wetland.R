@@ -84,7 +84,6 @@ Wetland <- function(age, landPos, lcc, canopyCover, percDecid, dBaseYear) {
 }
 
 if (runAnalysis) {
-  getYear <- function(pat, List) { return(List[grep(pat, List)])}
   #2020 first
   landPosList2020 <- getYear(2020, landPosList)
   ageList2020 <- getYear(2020, ageList)

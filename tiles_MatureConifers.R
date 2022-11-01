@@ -68,10 +68,7 @@ MatureConifer <- function(age, canopyCover, percDecid, dBaseYear) {
 }
 
 if (runAnalysis) {
-  #filter the years outside of function, I think...
-  #here the year is irrelevant, unlike disturbance, because the rasters are snapshot in time.
-  #but we should record the year for outputs.
-  getYear <- function(pat, List) { return(List[grep(pat, List)])}
+
   percDecidList2020 <- getYear(2020, percDecidList)
   ageList2020 <- getYear(2020, ageList)
   canopyCoverList2020 <- getYear(2020, canopyCoverList)

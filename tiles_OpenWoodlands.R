@@ -63,7 +63,6 @@ OpenWoodlands <- function(age, canopyCover, percDecid, pos, dBaseYear) {
 }
 
 if (runAnalysis) {
-  getYear <- function(pat, List) { return(List[grep(pat, List)])}
   percDecidList2020 <- getYear(2020, percDecidList)
   ageList2020 <- getYear(2020, ageList)
   canopyCoverList2020 <- getYear(2020, canopyCoverList)
