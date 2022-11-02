@@ -99,7 +99,6 @@ InferDisturbances <- function(NFDB, MngFor, age, lcc, dBaseYear = 1985) {
 
   NFDB <- rast(NFDB)
   ageDT[, NFDB := NFDB[][ageDT$pixelID]]
-  browser()
   #sort into three classes: young harvest, old harvest, fire
   #anything that isn't in 50, 11, or 20 (managed and private forest) is burned
   #anything with no record of fire and inside these classes is harvested
@@ -152,17 +151,17 @@ InferDisturbances <- function(NFDB, MngFor, age, lcc, dBaseYear = 1985) {
 
 if (runAnalysis) {
 
- NFDBlist <- list.files(path = "GIS/tiles", pattern = "NFDB", full.names = TRUE) %>%
+  NFDBlist <- list.files(path = "GIS/tiles", pattern = "NFDB", full.names = TRUE) %>%
     grep(., pattern = ".grd", value = TRUE)
- MngForList <- list.files(path = "GIS/tiles", pattern = "MFv2020", full.names = TRUE) %>%
+  MngForList <- list.files(path = "GIS/tiles", pattern = "Managed", full.names = TRUE) %>%
     grep(., pattern = ".grd", value = TRUE)
- ageList <- list.files(path = "GIS/tiles", pattern = "age_S_1985", full.names = TRUE) %>%
-   grep(., pattern = ".grd", value = TRUE)
- lccList <- list.files(path = "GIS/tiles", pattern = "VegTypeClass", full.names = TRUE) %>%
-   grep(., pattern = ".grd", value = TRUE)
+  ageList <- list.files(path = "GIS/tiles", pattern = "age_S_1985", full.names = TRUE) %>%
+    grep(., pattern = ".grd", value = TRUE)
+  lccList <- list.files(path = "GIS/tiles", pattern = "VegTypeClass", full.names = TRUE) %>%
+    grep(., pattern = ".grd", value = TRUE)
 
   Map(InferDisturbances, NFDB = NFDBlist, MngFor = MngForList,
-                         age = ageList, lcc = lccList,
+      age = ageList, lcc = lccList,
       MoreArgs = list(dBaseYear = 1985))
 }
 
