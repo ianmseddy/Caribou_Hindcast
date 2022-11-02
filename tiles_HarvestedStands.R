@@ -12,12 +12,12 @@ RecentCutBlocks <- function(dType, dYear, dBaseYear) {
   compareGeom(dType, dYear)
 
   harvestDT = data.table(1:ncell(dType),
-                         values(dType))
+                         values(dType, mat = FALSE))
   names(harvestDT) <- c("pixelID", "harvest")
   rm(dType)
   harvestDT <- harvestDT[harvest == 2]
   gc()
-  harvestDT[, harvest := values(dYear)[harvestDT$pixelID]]
+  harvestDT[, harvest := values(dYear, mat = FALSE)[harvestDT$pixelID]]
 
   harvestDT[, isYoung := dBaseYear - harvest <= 5 & dBaseYear >= harvest]
   youngHarvest <- rast(dYear)

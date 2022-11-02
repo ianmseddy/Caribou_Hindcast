@@ -91,10 +91,10 @@ notTiled <- lapply(filenamesNoExt, list.files, path = "GIS/tiles") %>%
 if (any(notTiled < 1)) {
   missing <- filenamesNoExt[notTiled < 1]
   lapply(missing, FUN = function(toTile){
-    toTile <- raster(file.path("GIS", paste0(toTile, ".tif"))) #must be raster
+    asRaster <- raster(file.path("GIS", paste0(toTile, ".tif"))) #must be raster
     Type <- ifelse(length(grep("YR|age", toTile)) == 1, "INT2U", "INT1U") #technically 240 is max age?
     #cc, percD, landcover, pos, all under 255
-    SpaDES.tools::splitRaster(toTile, nx = nx, ny = ny, buffer = c(35, 35), rType = Type, path = "GIS/tiles")
+    SpaDES.tools::splitRaster(asRaster, nx = nx, ny = ny, buffer = c(35, 35), rType = Type, path = "GIS/tiles")
   })
 }
 

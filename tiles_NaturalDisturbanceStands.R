@@ -32,7 +32,7 @@ RecentNaturalDist <- function(dType, dYear, dBaseYear){
   outRas <- setValues(x = outRas, burnVals)
 
   outFile <- file.path("outputs/raw", paste0("naturalDisturbance", dBaseYear,"_", tileNum, ".tif"))
-  writeRaster(outRas, filename = outFile, datatype = "INT1U")
+  writeRaster(outRas, filename = outFile, datatype = "INT1U", overwrite = TRUE)
   # focalMatrix <- terra::focalMat(x = outRas, d = focalWindow, type = "circle")
   # outFile <- file.path("outputs", paste0("naturalDisturbance", dBaseYear,  "_focal", focalWindow, "_", tileNum, ".tif"))
   # focalOut <- terra::focal(outRas, w = focalMatrix, sum, na.rm = TRUE, expand = FALSE,
