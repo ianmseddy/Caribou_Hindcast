@@ -9,18 +9,19 @@ dYearList <- list.files(path = "GIS/tiles", pattern = "1985_2020_YRT2", full.nam
 
 RecentNaturalDist <- function(dType, dYear, dBaseYear){
 
+
+
   tileNum <- stringr::str_extract(dType, pattern = "tile[0-9]+")
   dType <- rast(dType)
   dYear <- rast(dYear)
-  #using terra::subst is horrifically slow so I use data.tables instead
-  # burns <- terra::subst(dType, 2:255, NA) #this won't work for harvest
-  burnDT <- data.table(pixelID = 1:ncell(dType), burn = values(dType))
-  #why does the col name inherit the layer name?
+  compareGeom(dType, dYear)
+  burnDT <- data.table(pixelID = 1:ncell(dType), burn = values(dType, mat = FALSE))
+
   names(burnDT) <- c("pixelID", "burn")
   burnDT <- burnDT[burn == 1,]
   rm(dType)
-  gc()#30 GB ram - Yikes- these really accumulate
-  burnDT[, year := c(values(dYear)[burnDT$pixelID])]
+  gc()
+  burnDT[, year := dYear[][burnDT$pixelID]]
   #easier to do the logical queries on the non-NA and then rebuild the rasters with the eventual binary values
   burnVals <- rep(NA, ncell(dYear))
   #20 = year <= dBaseYear & year + 20 > dBaseYear
