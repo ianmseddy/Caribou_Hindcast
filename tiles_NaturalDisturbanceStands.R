@@ -9,12 +9,12 @@ dYearList <- list.files(path = "GIS/tiles", pattern = "1985_2020_YRT2", full.nam
 
 RecentNaturalDist <- function(dType, dYear, dBaseYear){
 
-
-
   tileNum <- stringr::str_extract(dType, pattern = "tile[0-9]+")
   dType <- rast(dType)
   dYear <- rast(dYear)
+
   compareGeom(dType, dYear)
+
   burnDT <- data.table(pixelID = 1:ncell(dType), burn = values(dType, mat = FALSE))
 
   names(burnDT) <- c("pixelID", "burn")
