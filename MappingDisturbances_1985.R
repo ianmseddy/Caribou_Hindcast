@@ -21,12 +21,12 @@ if (FALSE) {
   #get map of forest management (2020) hopefully this isn't outdated... make sure to check
   #values are 11 - long-term tenure, 12 - short-term tenure, 13 other, 20 Protected aras,
   #31 Federal reserve, 32 Indian Reserve, 33 Restricted, 40 Treaty and Settlement, 50 Private forests
-  ManagedForest <- postProcessTerra(url = paste0("https://ca.nfis.org/fss/fss?command=retrieveById&fss_",
-                                                 "id=Anh-adILivU0opBCuud2oA&format=xml&promptToSave=true"),
+  ManagedForest <- prepInputs(url = paste0("https://drive.google.com/file/d",
+                                                 "/1W2EiRtHj_81ZyKk5opqMkRqCA1tRMMvB/view?usp=share_link"),
                                     fun = "terra::rast",
                                     destinationPath = "GIS",
-                                    targetFile = "Canada_MFv2020.tif")
-  ManagedForest <- postProcessTerra(ManagedForest, to = age,
+                                    targetFile = "Canada_MFv2017.tif")
+  ManagedForest <- postProcessTerra(from = ManagedForest, to = age,
                                     writeTo = "GIS/Eastern_ManagedForest.tif",
                                     method = "near", datatype = "INT1U")
   ManagedForest <- raster("GIS/Eastern_ManagedForest.tif")
@@ -49,8 +49,8 @@ if (FALSE) {
 
   NFDBras <- fasterize(NFDB, raster = ageRTM, field = "YEAR")
 
-  writeRaster(NFDBras, "GIS/NFBD_raster_1965_1985.tif", overwrite = TRUE)
-  rm(NFDBRas)
+  writeRaster(NFDBras, "GIS/NFDB_raster_1965_1985.tif", overwrite = TRUE)
+  rm(NFDBras)
   NFDBras <- raster("GIS/NFDB_raster_1965_1985.tif") #this was 60 GB  in RAM
   #tile the NFDB
   fireTiles <- list.files("GIS/tiles", pattern = "NFDB", full.names = TRUE)
@@ -62,7 +62,6 @@ if (FALSE) {
   }
 
 }
-
 #in hindsight, didn't need to restrict fire year to 65-85 in the rasterized version
 #also I assume 20 is valid as a regenerating stand (older than twenty..?)
 InferDisturbances <- function(NFDB, MngFor, age, lcc, dBaseYear = 1985) {
@@ -100,7 +99,7 @@ InferDisturbances <- function(NFDB, MngFor, age, lcc, dBaseYear = 1985) {
 
   NFDB <- rast(NFDB)
   ageDT[, NFDB := NFDB[][ageDT$pixelID]]
-
+  browser()
   #sort into three classes: young harvest, old harvest, fire
   #anything that isn't in 50, 11, or 20 (managed and private forest) is burned
   #anything with no record of fire and inside these classes is harvested

@@ -1,56 +1,84 @@
 #some wetland was created using age and crownclosure values that were greater than, instead of equal or greater than
 #as such, a small amount was double-counted.
 #there is also a massive amount of regenerating forest (not majority conifer)
-ensureExclusiveClasses <- function(outputDir, tile, year){
-
-  habitats <- list.files(outputDir, pattern = tile, full.names = TRUE) %>%
+ensureExclusiveClasses <- function(inDir, tile, year, outDir){
+  browser()
+  habitats <- list.files(inDir, pattern = tile, full.names = TRUE) %>%
     .[grep(., pattern = year)]
-  habitatRasters <- lapply(habitats, FUN = rast)
-  names(habitatRasters) <- stringr::str_remove(basename(habitats),
-                                               pattern = paste0(year, "_" ,tile, ".tif"))
+  habs <- lapply(habitats, FUN = rast)
+  names(habs) <- stringr::str_remove(basename(habitats),
+                                     pattern = paste0(year, "_" ,tile, ".tif"))
 
-  #first, ensure the three disturbance classes are exclusive. They should be
+  #first, we need to add the missingRegen class if it exists (it doesn't for 1985)
+
+  if (!is.null(habs$missingRegen)) {
+    habs$regeneratingStand <- sum(habs$regeneratingStand,
+                                   habs$missingRegen, na.rm = TRUE)
+    habs[habs > 1] <- 1
+    habs$missingRegen <- NULL
+    gc()
+    #if there are any twos, they should be 0 - though this shouldnt' happen...
+  }
+
+  #per discussion with Yan, disturbed wetland is wetland
+  #wetland takes precedence over every other class
+  #followed by the mapped disturbance layers
+  #some pixels are in multilple classes as disturbance year and age are not always aligned
+
+  checkClasses <- function(priorityClass, comp, msgClass) {
+    sumRas <- sum(priorityClass, comp, na.rm = TRUE) #make sure this isn't summing every cell
+    if (minMax(sumRas[2] > 1)) { #ie the max is greater than 2
+      vals <- sumRas[]
+      message(length(vals[vals > 1]), " misclassified pixels in ", msgClass)
+      comp <- mask(comp, mask = priorityClass, inverse = TRUE)
+      rm(vals)
+    }
+    rm(sumRas)
+    gc()
+    return(comp)
+  }
+  #this must be done sequentially
+  habs$harvest_0to5_ <- checkClasses(habs$wetland, comp = habs$harvest_0to5_)
+  habs$harvest_6to20_ <- checkClasses(habs$wetland, comp = habs$harvest_6to20_)
+  habs$naturalDisturbance <- checkClasses(habs$wetland, comp = habs$naturalDisturbance)
+
+  #this saves time - and these should be mutually exclusive unless something horrible happened
   tempFile <- tempfile2(fileext = ".tif") #avoid annoying warning with normalize tempfile
-  disturbanceSum <- sum(habitatRasters$harvest_0to5_1985, habitatRasters$harvest_6to20_1985,
-                        habitatRasters$naturalDisturbance1985, na.rm = TRUE)
-  disturbanceSum <- writeRaster(disturbanceSum, tempFile)
-  gc()
-  vals <- minmax(disturbanceSum)
+  nextMask <- sum(habs$harvest_0to5_, habs$harvest_6to20_,
+                  habs$naturalDisturbance, habs$wetland, na.rm = TRUE,
+                  filename = tempFile)
+  #as wetland is now distinct from disturbance, we can add all these and mask the others...
 
-  rm(disturbanceSum)
-  gc()
-  if (vals[2] > 1) {
-    stop("issue with disturbed classes")
-  }
-  disturbanceSum <- sum(habitatRasters$harvest_0to5_, habitatRasters$harvest_6to20_,
-                        habitatRasters$naturalDisturbance, na.rm = TRUE)
-  vals <- minmax(disturbanceSum)
+  vals <- minmax(nextMask)
   gc()
   if (vals[2] > 1) {
     stop("issue with disturbed classes")
+    #this would only happen if the indexing was incorrect,
+    #which should be caught by compareGeom at the beginning of every tiling function
   }
-  #these three take precedence over any other rasters
-  #it is probably fastest to simply re-write every raster then to manually check and track
-  #the other 5 should be okay
-  tempSum <- sum(habitatRasters$matureConifer, habitatRasters$openWoodland,
-                 habitatRasters$youngConifer, habitatRasters$regeneratingStand_,
-                 habitatRasters$wetland, na.rm = TRUE)
-  if (minmax(tempSum)[2] > 1) {
-    stop("shit") #but actually we can just inverse = TRUE it. Wetland takes precendence
-    #the others should be mutually exclusive unless something is horrifically wrong
+  habs$matureConifer <- checkClasses(nextMask, habs$matureConifer, msgClass = "matureConifer")
+  habs$youngConifer <- checkClasses(nextMask, habs$youngConifer, msgClass = "youngConifer")
+  habs$openWoodland <- checkClasses(nextMask, habs$openWoodland, msgClass = "openWoodland")
+  habs$regeneratingStand <- checkClasses(nextMask, habs$regeneratingStand, msgClass = "regeneratingStand")
+
+  #final test to make sure everything is kosher
+  habs$na.rm <- TRUE
+  #TODO: check this
+  test <- do.call(terra::sum, habs)
+  if (minmax(test)[2] > 1) {
+    stop("review this script!")
   }
+  habs$na.rm <- NULL
+  rm(test)
+  gc()
 
-  #matureConifer should supersede wetland due to a msitake
-  #wetland should supersede regeneratingStand
-  #you need some kind of temporary regeneratingStand for age < 20 that must be added, still..
-
-
-  toFix <- c("matureConifer", "youngConifer", "wetland", "openWoodland", "regeneratingStand")
-
-
-  lapply(toFix, fun = function(rasName){
-    newRas <- mask(habitatRasters[[rasName]], mask = disturbanceSum, inverse = TRUE)
-    writeRaster(newRas, filename = sources(habitatRasters[[rasName]]))
-  })
-
+  #don't forget to rewrite them!
+  lapply(names(habs), FUN = function(name, habs)){
+    checkPath(outDir, create = TRUE)
+    filename = paste0(outDir, "/", name, year, "_", tile, ".tif")
+    writeRaster(habs[[name]], )
+  }
+  gc()
 }
+
+ensureExclusiveClasses("outputs/raw", tile = "tile1", year = 2020, outdir = "outputs/masked")
