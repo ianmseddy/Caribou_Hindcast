@@ -15,4 +15,5 @@ Require(c("terra (>=1.6.7)", "sf", "data.table", "reproducible (>=1.2.10.9001)",
 # packageVersion('reproducible') 1.2.10.9001
 # packageVersion("raster") #3.5.15
 
-#this is essential to ensuring GIS operations are identical across machines
+#this is essential to ensuring GIS operations are identical across machines, so the tiles are the same
+#updating terra resulted in a one-row difference in the projected raster, which meant everything had to be re-cropped

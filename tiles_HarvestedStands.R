@@ -32,8 +32,6 @@ RecentCutBlocks <- function(dType, dYear, dBaseYear) {
   # focalMatrix <- terra::focalMat(x = youngHarvest, type = "circle", d = focalWindow)
   youngHarvestFile <- file.path("outputs/raw", paste0("harvest_0to5_", dBaseYear, "_", tileNum, ".tif"))
   writeRaster(youngHarvest, filename = youngHarvestFile, overwrite = TRUE)
-  # youngFocal <- terra::focal(youngHarvest, w = focalMatrix, fun = sum, na.rm = TRUE, expand = FALSE,
-  #                            filename = youngFocalFile, datatype = "INT1U", overwrite = TRUE) #30 * 30
   harvestDT[, isYoung := NULL] #Old is not the corollary as disturbances can be up to 35
 
   gc()
@@ -44,8 +42,7 @@ RecentCutBlocks <- function(dType, dYear, dBaseYear) {
   youngHarvest <- setValues(youngHarvest, oldHarvestValues)
   oldHarvestFile <- file.path("outputs/raw", paste0("harvest_6to20_", dBaseYear, "_", tileNum, ".tif"))
   writeRaster(youngHarvest, oldHarvestFile, overwrite = TRUE)
-  # oldFocal <- terra::focal(youngHarvest, w = focalMatrix, fun = sum, na.rm = TRUE,
-  #                          expand = FALSE, filename = oldFocalFile, overwrite = TRUE)
+
 
   rm(youngHarvest, harvestDT)
   gc()
