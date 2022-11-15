@@ -3,8 +3,9 @@ library(parallel)
 #apparently it is faster if things are in memory when running focal, and then written to SSD
 
 #the radius argument is 564 (1 km2 = 1000000m2 = pi*r2, solving for r = 564)
-#if we used a square, it would be 1000 as the argument is the length of 1 or 2 sides
-#currently writing to a SSD to speed this part up
+
+outputDir <- "D:/Ian/YanBoulanger/focalHabitat"
+
 focalFiles <- list.files("D:/Ian/YanBoulanger/maskedHabitat", pattern = ".tif", full.names = TRUE)
 focalMatrix <- terra::focalMat(x = rast(focalFiles[1]), d = 564, type = "circle")
 
@@ -32,8 +33,17 @@ clusterEvalQ(cl, {
 
 
 # clusterEvalQ(cl, focalMatrix)
-parLapply(cl, focalFiles[grep(focalFiles, pattern = "tile4")], focalStats,
-             outDir = "D:/Ian/YanBoulanger/focalHabitat")
+parLapply(cl, focalFiles, focalStats,
+          outDir = outputDir)
 stopCluster(cl)
 
-#need to finish 4, 5, and 6, and redo wetlands
+#wetlands were not in /masked because they were the primary masking layer
+wetlands <- list.files("outputs/raw/", pattern = "wetland", full.names = TRUE)
+parLapply(cl, wetlands, focalStats, outDir = outputDir)
+
+
+#check all is kosher
+tiles <- paste0("tile", 1:6)
+lapply(tiles, list.files, path = outputDir, full.names = TRUE) %>%
+  lapply(., length)
+#16 each tile, due to 8 habitats * 2 years. Done!
