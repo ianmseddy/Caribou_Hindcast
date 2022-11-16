@@ -2,12 +2,12 @@
 library(parallel)
 #apparently it is faster if things are in memory when running focal, and then written to SSD
 
-#the radius argument is 564 (1 km2 = 1000000m2 = pi*r2, solving for r = 564)
+#the radius argument is 1000 - the area is supposed to be 3.14 km2
 
 outputDir <- "D:/Ian/YanBoulanger/focalHabitat"
 
 focalFiles <- list.files("D:/Ian/YanBoulanger/maskedHabitat", pattern = ".tif", full.names = TRUE)
-focalMatrix <- terra::focalMat(x = rast(focalFiles[1]), d = 564, type = "circle")
+focalMatrix <- terra::focalMat(x = rast(focalFiles[1]), d = focalRadius, type = "circle")
 
 focalStats <- function(rastFile, weights = focalMatrix, outDir) {
   library(terra)
