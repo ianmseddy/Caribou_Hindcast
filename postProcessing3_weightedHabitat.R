@@ -50,9 +50,11 @@ makeWeightedHabitat <- function(tileList, year, outputPath) {
 lapply(habitatRasters, FUN = makeWeightedHabitat, year = 2020, outputPath = outputDir)
 lapply(habitatRasters, FUN = makeWeightedHabitat, year = 1985, outputPath = outputDir)
 
-#it is possible that regenerating stands accidentally included non-forest. Must review this...
-# with 1985, forest is used to identify disturbances, but because age=0 is allowable for non-forest, we have issue...
 
+
+#make a map with
+#fire = 1, young/old harvest = 2 and 3, young/mature conifer = 4 and 5,
+#open woodland 6, wetland 7, regenerating forest = 8
 makeCompositeHabitat <- function(tileList, year, outputPath) {
   tileList <- tileList[grep(tileList, pattern = year)] #1985 or 2020
   if (length(tileList) == 0) {stop("incorrect year")}
