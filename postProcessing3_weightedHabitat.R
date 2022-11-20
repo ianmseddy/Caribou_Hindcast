@@ -56,6 +56,7 @@ lapply(habitatRasters, FUN = makeWeightedHabitat, year = 1985, outputPath = outp
 #fire = 1, young/old harvest = 2 and 3, young/mature conifer = 4 and 5,
 #open woodland 6, wetland 7, regenerating forest = 8
 makeCompositeHabitat <- function(tileList, year, outputPath) {
+  checkPath(outputPath, create = TRUE)
   tileList <- tileList[grep(tileList, pattern = year)] #1985 or 2020
   if (length(tileList) == 0) {stop("incorrect year")}
   #as a float, each individual habitat tile is 20 GB
@@ -92,5 +93,10 @@ makeCompositeHabitat <- function(tileList, year, outputPath) {
 
 }
 
-lapply(habitatRasters, FUN = makeCompositeHabitat, year = 2020, outputPath = outputDir)
-lapply(habitatRasters, FUN = makeCompositeHabitat, year = 1985, outputPath = outputDir)
+inputDir <- "D:/Ian/YanBoulanger/maskedHabitat"
+outputDir <- "D:/Ian/YanBoulanger/"
+
+habitatClasses <- lapply(tiles, list.files, path = inputDir, full.names = TRUE)
+
+lapply(habitatClasses, FUN = makeCompositeHabitat, year = 2020, outputPath = outputDir)
+lapply(habitatClasses, FUN = makeCompositeHabitat, year = 1985, outputPath = outputDir)
