@@ -8,17 +8,16 @@ if (Sys.info()["sysname"] == "Linux") {
   num_cores <- 3
   cl <- makeCluster(num_cores)
 } else {
-  inputDir <- "D:/Ian/YanBoulanger/outputs/maskedHabitat"
+  inputDir <- "D:/Ian/YanBoulanger/maskedHabitat"
   outputDir <- "D:/Ian/YanBoulanger/focalHabitat"
   num_cores <- 3
-  cl <- makeCluster(num_cores, type = "PSOCK")
+  cl <- makeCluster(num_cores)
 }
 
-focalFiles <- list.files(, pattern = ".tif", full.names = TRUE)
+focalFiles <- list.files(inputDir, pattern = ".tif", full.names = TRUE)
 focalMatrix <- terra::focalMat(x = rast(focalFiles[1]), d = focalRadius, type = "circle")
 
 focalStats <- function(rastFile, weights = focalMatrix, outDir) {
-  library(terra)
   baseName <- basename(rastFile)
   outFile <- file.path(outDir, paste0("focal_", baseName))
   inFile <- rast(rastFile)
@@ -31,7 +30,7 @@ focalStats <- function(rastFile, weights = focalMatrix, outDir) {
 }
 
 #each focal operation is ~22 GB/tile/year/habitat class -
-clusterExport(cl, "focalMatrix")
+clusterExport(cl, varlist = c("focalMatrix"))
 clusterEvalQ(cl, {
   library(terra)
 })
