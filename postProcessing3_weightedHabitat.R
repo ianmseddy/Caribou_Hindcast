@@ -2,12 +2,26 @@
 # convert all focal habitat rasters into single weighted habitat layer for each year
 # calculate the difference
 # generate a habitat class layer by assigning 1:8 to binary habitats
-inputDir <- "D:/Ian/YanBoulanger/focalHabitat"
-outputDir <- "D:/Ian/YanBoulanger/weightedHabitat"
-checkPath(outputDir, create = TRUE)
+# thsi cannot be run in parallel (well without a better machine - RAM use hits 60 GB one tile)
+
+
+if (Sys.info()["sysname"] == "Linux") {
+  inputDir1 <- "outputs/focalHabitat"
+  outputDir1 <- "outputs/weightedHabitat"
+  inputDir2 <- "outputs/maskedHabitat"
+  outputDir2 <- "outputs/compositeHabitat"
+} else {
+  inputDir1 <- "D:/Ian/YanBoulanger/maskedHabitat"
+  outputDir1 <- "D:/Ian/YanBoulanger/focalHabitat"
+  inputDir2 <- "D:/Ian/YanBoulanger/maskedHabitat"
+  outputDir2 <- "D:/Ian/YanBoulanger/compositeHabitat"
+}
+
+checkPath(outputDir1, create = TRUE)
+checkPath(outputDir2, create = TRUE)
 tiles <- paste0("tile", 1:6)
 
-habitatRasters <- lapply(tiles, list.files, path = inputDir, full.names = TRUE)
+habitatRasters <- lapply(tiles, list.files, path = inputDir1, full.names = TRUE)
 
 makeWeightedHabitat <- function(tileList, year, outputPath) {
 
@@ -47,8 +61,8 @@ makeWeightedHabitat <- function(tileList, year, outputPath) {
   message(tileNum, " complete")
 }
 
-lapply(habitatRasters, FUN = makeWeightedHabitat, year = 2020, outputPath = outputDir)
-lapply(habitatRasters, FUN = makeWeightedHabitat, year = 1985, outputPath = outputDir)
+lapply(habitatRasters, FUN = makeWeightedHabitat, year = 2020, outputPath = outputDir1)
+lapply(habitatRasters, FUN = makeWeightedHabitat, year = 1985, outputPath = outputDir1)
 
 
 
@@ -93,13 +107,12 @@ makeCompositeHabitat <- function(tileList, year, outputPath) {
 
 }
 
-inputDir <- "D:/Ian/YanBoulanger/maskedHabitat"
-outputDir <- "D:/Ian/YanBoulanger/"
 
-habitatClasses <- lapply(tiles, list.files, path = inputDir, full.names = TRUE)
+
+habitatClasses <- lapply(tiles, list.files, path = inputDir2, full.names = TRUE)
 #some memory leakage happens with this function. Not sure why. Don't recommend running all at once
-lapply(habitatClasses, makeCompositeHabitat, year = 2020, outputPath = outputDir)
-lapply(habitatClasses[1:3], makeCompositeHabitat, year = 1985, outputPath = outputDir)
+lapply(habitatClasses, makeCompositeHabitat, year = 2020, outputPath = outputDir2)
+lapply(habitatClasses[1:3], makeCompositeHabitat, year = 1985, outputPath = outputDir2)
 gc()
-lapply(habitatClasses[4:6], makeCompositeHabitat, year = 1985, outputPath = outputDir)
+lapply(habitatClasses[4:6], makeCompositeHabitat, year = 1985, outputPath = outputDir2)
 gc()
