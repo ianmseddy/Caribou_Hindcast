@@ -100,11 +100,11 @@ InferDisturbances <- function(NFDB, MngFor, age, lcc, dBaseYear = 1985) {
   NFDB <- rast(NFDB)
   ageDT[, NFDB := NFDB[][ageDT$pixelID]]
   #sort into three classes: young harvest, old harvest, fire
-  #anything that isn't in 50, 11, or 20 (managed and private forest) is burned
+  #anything that isn't in 50, 11, or 12 (managed and private forest) is burned
   #anything with no record of fire and inside these classes is harvested
   #any disturbance that didn't ultimately regenerate to 2020 forest is already excluded
-  youngHarvest <- ageDT[MngFor %in% c(50, 11, 20) & is.na(NFDB) & age < 6]$pixelID
-  oldHarvest <- ageDT[MngFor %in% c(50, 11, 20) & is.na(NFDB) & age > 5]$pixelID
+  youngHarvest <- ageDT[MngFor %in% c(50, 11, 12) & is.na(NFDB) & age < 6]$pixelID
+  oldHarvest <- ageDT[MngFor %in% c(50, 11, 12) & is.na(NFDB) & age > 5]$pixelID
   fire <- ageDT[!c(pixelID %in% oldHarvest| pixelID %in% youngHarvest)]$pixelID
   rm(ageDT)
   gc()
@@ -116,10 +116,6 @@ InferDisturbances <- function(NFDB, MngFor, age, lcc, dBaseYear = 1985) {
   gc()# for data.table overwrite
   outFile <- file.path("outputs/raw", paste0("naturalDisturbance", dBaseYear,"_", tileNum, ".tif"))
   writeRaster(fire, filename = outFile, datatype = "INT1U", overwrite = TRUE)
-  # outFile <- file.path("outputs", paste0("naturalDisturbance_", dBaseYear,  "_focal", focalWindow, "_", tileNum, ".tif"))
-  # focalOut <- terra::focal(fire, w = focalMatrix, sum, na.rm = TRUE, expand = FALSE,
-  #                          filename = outFile, overwrite = TRUE)
-
   rm(fire, fireRepVals)
   gc()
 
@@ -129,9 +125,6 @@ InferDisturbances <- function(NFDB, MngFor, age, lcc, dBaseYear = 1985) {
   youngHarvest <- setValues(NFDB, harvestRepVals)
   outFile <- file.path("outputs/raw", paste0("harvest_0to5_", dBaseYear,"_", tileNum, ".tif"))
   writeRaster(youngHarvest, filename = outFile, datatype = "INT1U", overwrite = TRUE)
-  # outFile <- file.path("outputs", paste0("harvest_0to5_", dBaseYear,  "_focal", focalWindow, "_", tileNum, ".tif"))
-  # youngFocal <- terra::focal(youngHarvest, w = focalMatrix, fun = sum, na.rm = TRUE, expand = FALSE,
-  #                            filename = outFile, overwrite = TRUE)
   rm(youngHarvest, harvestRepVals)
   gc()
 

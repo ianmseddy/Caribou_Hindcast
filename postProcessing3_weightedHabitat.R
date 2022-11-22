@@ -97,6 +97,9 @@ inputDir <- "D:/Ian/YanBoulanger/maskedHabitat"
 outputDir <- "D:/Ian/YanBoulanger/"
 
 habitatClasses <- lapply(tiles, list.files, path = inputDir, full.names = TRUE)
-
-lapply(habitatClasses, FUN = makeCompositeHabitat, year = 2020, outputPath = outputDir)
-lapply(habitatClasses, FUN = makeCompositeHabitat, year = 1985, outputPath = outputDir)
+#some memory leakage happens with this function. Not sure why. Don't recommend running all at once
+lapply(habitatClasses, makeCompositeHabitat, year = 2020, outputPath = outputDir)
+lapply(habitatClasses[1:3], makeCompositeHabitat, year = 1985, outputPath = outputDir)
+gc()
+lapply(habitatClasses[4:6], makeCompositeHabitat, year = 1985, outputPath = outputDir)
+gc()
