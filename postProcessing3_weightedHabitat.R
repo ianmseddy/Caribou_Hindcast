@@ -29,40 +29,60 @@ makeWeightedHabitat <- function(tileList, year, outputPath) {
   tileList <- tileList[grep(tileList, pattern = year)] #1985 or 2020
   if (length(tileList) == 0) {stop("incorrect year")}
   #as a float, each individual habitat tile is 20 GB
+  #this function writes too many temp files so clean up must occur inside lapply loop
 
-  fire <- rast(tileList[grep("naturalDisturbance", tileList)]) * 0.06
-  harvestY <- rast(tileList[grep("harvest_0to5", tileList)]) * 0.04
-  harvestO <- rast(tileList[grep("harvest_6to20", tileList)]) * 0.04
-  weightedHabitat <- sum(harvestY, harvestO, fire, na.rm = TRUE)
+  #put in function for terra so filename can be provided, allowing for easy deletion
+  multi <- function(x, by){x * by}
+
+  tempFile1 <- tempfile(fileext = ".tif")
+  tempFile2 <- tempfile(fileext = ".tif")
+  tempFile3 <- tempfile(fileext = ".tif")
+  tempFile4 <- tempfile(fileext = ".tif")
+
+  fire <- app(rast(tileList[grep("naturalDisturbance", tileList)]),
+                     fun = multi, by = 0.06, filename = tempFile1)
+  harvestY <- app(rast(tileList[grep("harvest_0to5", tileList)]),
+                  fun = multi, by = 0.04, filename = tempFile2)
+  harvestO <- app(rast(tileList[grep("harvest_6to20", tileList)]),
+                  fun = multi, by = 0.04, filename = tempFile3)
+  weightedHabitat <- sum(harvestY, harvestO, fire, na.rm = TRUE, filename = tempFile4)
   rm(harvestY, harvestO, fire)
   gc()
 
-  coniferY <- rast(tileList[grep("youngConifer", tileList)]) * 0.19
-  coniferO <- rast(tileList[grep("matureConifer", tileList)]) * 0.25
-  weightedHabitat <- sum(coniferY, coniferO, weightedHabitat, na.rm = TRUE)
+  coniferY <- app(x = rast(tileList[grep("youngConifer", tileList)]),
+                  fun = multi, by = 0.19, filename = tempFile2, overwrite = TRUE)
+  coniferO <- app(rast(tileList[grep("matureConifer", tileList)]),
+                  fun = multi, by = 0.25, filename = tempFile1, overwrite = TRUE)
+  weightedHabitat <- sum(coniferY, coniferO, weightedHabitat, na.rm = TRUE, filename = tempFile3, overwrite = TRUE)
   rm(coniferY, coniferO)
   gc()
 
-  woodlands <- rast(tileList[grep("openWoodland", tileList)]) * 0.22
-  wetlands <- rast(tileList[grep("wetland", tileList)]) * 0.14
-  weightedHabitat <- sum(weightedHabitat, woodlands, wetlands, na.rm = TRUE)
+  woodlands <- app(x = rast(tileList[grep("openWoodland", tileList)]),
+                   fun = multi, by = 0.22, filename = tempFile1, overwrite = TRUE)
+  wetlands <- app(rast(tileList[grep("wetland", tileList)]),
+                  fun = multi, by = 0.14, filename = tempFile2, overwrite = TRUE)
+  weightedHabitat <- sum(weightedHabitat, woodlands, wetlands, filename = tempFile4, na.rm = TRUE)
   rm(woodlands, wetlands)
   gc()
 
-  regen <- rast(tileList[grep("regenerating", tileList)]) * 0.06
-  weightedHabitat <- sum(weightedHabitat, regen, na.rm = TRUE)
-  rm(regen)
-  gc()
+  regen <- app(rast(tileList[grep("regenerating", tileList)]),
+               fun = multi, by = 0.06, filename = tempFile1, overwrite = TRUE)
 
-
+  #prepare final file
   tileNum <- stringr::str_extract(tileList[1], pattern = "tile[0-9]+")
   outFile <- file.path(outputPath, paste0("weightedHabitat_", year, "_", tileNum, ".tif"))
+  weightedHabitat <- sum(weightedHabitat, regen, na.rm = TRUE, filename = outFile, overwrite = TRUE)
+
+  #clean up
+  unlink(x = c(tempFile1, tempFile2, tempFile3, tempFile4))
+
+  gc()
   writeRaster(weightedHabitat, filename = outFile, overwrite = TRUE)
   message(tileNum, " complete")
 }
 
 lapply(habitatRasters, FUN = makeWeightedHabitat, year = 2020, outputPath = outputDir1)
-lapply(habitatRasters, FUN = makeWeightedHabitat, year = 1985, outputPath = outputDir1)
+lapply(habitatRasters[1:3], FUN = makeWeightedHabitat, year = 1985, outputPath = outputDir1)
 
 
 
@@ -75,34 +95,52 @@ makeCompositeHabitat <- function(tileList, year, outputPath) {
   if (length(tileList) == 0) {stop("incorrect year")}
   #as a float, each individual habitat tile is 20 GB
 
-  fire <- rast(tileList[grep("naturalDisturbance", tileList)]) * 1
-  harvestY <- rast(tileList[grep("harvest_0to5", tileList)]) * 2
-  harvestO <- rast(tileList[grep("harvest_6to20", tileList)]) * 3
-  compositeHabitat <- sum(harvestY, harvestO, fire, na.rm = TRUE)
+  tempFile1 <- tempfile(fileext = ".tif")
+  tempFile2 <- tempfile(fileext = ".tif")
+  tempFile3 <- tempfile(fileext = ".tif")
+  tempFile4 <- tempfile(fileext = ".tif")
+
+  multi <- function(x, by){x * by}
+
+  fire <- rast(tileList[grep("naturalDisturbance", tileList)]) #this one is 1 - so it doesn't need to be multiplied
+  harvestY <- app(x = rast(tileList[grep("harvest_0to5", tileList)]),
+                  fun = multi, by = 2, filename = tempFile1)
+  harvestO <- app(x = rast(tileList[grep("harvest_6to20", tileList)]),
+                  fun = multi, by = 3, filename = tempFile2)
+  compositeHabitat <- sum(harvestY, harvestO, fire, filename = tempFile3, na.rm = TRUE)
   rm(harvestY, harvestO, fire)
   gc()
 
-  coniferY <- rast(tileList[grep("youngConifer", tileList)]) * 4
-  coniferO <- rast(tileList[grep("matureConifer", tileList)]) * 5
-  compositeHabitat <- sum(coniferY, coniferO, compositeHabitat, na.rm = TRUE)
+  coniferY <- app(rast(tileList[grep("youngConifer", tileList)]),
+                  fun = multi, by = 4, filename = tempFile1, overwrite = TRUE)
+  coniferO <- app(rast(tileList[grep("matureConifer", tileList)]),
+                  fun = multi, by = 5, filename = tempFile2, overwrite = TRUE)
+  compositeHabitat <- sum(coniferY, coniferO, compositeHabitat, na.rm = TRUE,
+                          filename = tempFile4)
   rm(coniferY, coniferO)
   gc()
 
-  woodlands <- rast(tileList[grep("openWoodland", tileList)]) * 6
-  wetlands <- rast(tileList[grep("wetland", tileList)]) * 7
-  compositeHabitat <- sum(compositeHabitat, woodlands, wetlands, na.rm = TRUE)
+  woodlands <- app(rast(tileList[grep("openWoodland", tileList)]),
+                   fun = multi, by = 6, filename = tempFile1, overwrite = TRUE)
+
+  wetlands <- app(rast(tileList[grep("wetland", tileList)]),
+                  fun = multi, by = 7, filename = tempFile2, overwrite = TRUE)
+  compositeHabitat <- sum(compositeHabitat, woodlands, wetlands, na.rm = TRUE,
+                          filename = tempFile3, overwrite = TRUE)
   rm(woodlands, wetlands)
   gc()
 
-  regen <- rast(tileList[grep("regenerating", tileList)]) * 8
-  compositeHabitat <- sum(compositeHabitat, regen, na.rm = TRUE)
+  regen <- app(rast(tileList[grep("regenerating", tileList)]),
+               fun = multi, by = 8, filename = tempFile1, overwrite = TRUE)
+  tileNum <- stringr::str_extract(tileList[1], pattern = "tile[0-9]+")
+  outFile <- file.path(outputPath, paste0("compositeHabitat_", year, "_", tileNum, ".tif"))
+  compositeHabitat <- sum(compositeHabitat, regen, na.rm = TRUE, filename = outFile)
   rm(regen)
   gc()
 
+  unlink(c(tempFile1, tempFile2, tempFile3, tempFile4))
 
-  tileNum <- stringr::str_extract(tileList[1], pattern = "tile[0-9]+")
-  outFile <- file.path(outputPath, paste0("compositeHabitat_", year, "_", tileNum, ".tif"))
-  writeRaster(compositeHabitat, filename = outFile, overwrite = TRUE)
+
   message(tileNum, " complete")
 
 }
