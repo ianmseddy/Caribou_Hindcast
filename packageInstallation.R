@@ -1,16 +1,20 @@
 #project set up
-packageDir <- "packages"
-if (!dir.exists(packageDir)) dir.create(packageDir)
+pkgDir <- file.path("packages",version$platform, getRversion()[, 1:2])
+dir.create(pkgDir, recursive = TRUE, showWarnings = FALSE)
+.libPaths(pkgDir, include.site = FALSE)
+message("Using libPaths:\n", paste(.libPaths(), collapse = "\n"))
 
-.libPaths(packageDir)
 
+#while require is down
 if (!require("Require")) install.packages("Require")
+
 Require("checkpoint", upgrade = FALSE)
 Require("remotes", upgrade = FALSE)
 # checkpoint("2021-01-01", r_version = "4.2.0", checkpoint_location = packageDir)
 
-Require(c("terra (>=1.6.7)", "sf", "data.table", "reproducible (>=1.2.10.9001)",
-          "stringr", "raster", "googledrive", "magrittr", "parallel", "SpaDES.tools"), upgrade = FALSE)
+Require::Require(packages = c("terra (>=1.6.7)", "sf", "data.table", "reproducible (>=1.2.10.9001)",
+          "stringr", "raster", "googledrive", "magrittr", "parallel", "SpaDES.tools"),
+        upgrade = FALSE)
 # packageVersion('terra') #1.6.7
 # packageVersion('reproducible') 1.2.10.9001
 # packageVersion("raster") #3.5.15
