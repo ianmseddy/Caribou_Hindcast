@@ -53,7 +53,8 @@ makeWeightedHabitat <- function(tileList, year, outputPath) {
                   fun = multi, by = 0.19, filename = tempFile2, overwrite = TRUE)
   coniferO <- app(rast(tileList[grep("matureConifer", tileList)]),
                   fun = multi, by = 0.25, filename = tempFile1, overwrite = TRUE)
-  weightedHabitat <- sum(coniferY, coniferO, weightedHabitat, na.rm = TRUE, filename = tempFile3, overwrite = TRUE)
+  weightedHabitat <- sum(coniferY, coniferO, weightedHabitat, na.rm = TRUE,
+                         filename = tempFile3, overwrite = TRUE)
   rm(coniferY, coniferO)
   gc()
 
@@ -61,7 +62,8 @@ makeWeightedHabitat <- function(tileList, year, outputPath) {
                    fun = multi, by = 0.22, filename = tempFile1, overwrite = TRUE)
   wetlands <- app(rast(tileList[grep("wetland", tileList)]),
                   fun = multi, by = 0.14, filename = tempFile2, overwrite = TRUE)
-  weightedHabitat <- sum(weightedHabitat, woodlands, wetlands, filename = tempFile4, na.rm = TRUE)
+  weightedHabitat <- sum(weightedHabitat, woodlands, wetlands, filename = tempFile4,
+                         na.rm = TRUE, overwrite = TRUE)
   rm(woodlands, wetlands)
   gc()
 
@@ -75,9 +77,7 @@ makeWeightedHabitat <- function(tileList, year, outputPath) {
 
   #clean up
   unlink(x = c(tempFile1, tempFile2, tempFile3, tempFile4))
-
   gc()
-  writeRaster(weightedHabitat, filename = outFile, overwrite = TRUE)
   message(tileNum, " complete")
 }
 
