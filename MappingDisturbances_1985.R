@@ -13,58 +13,10 @@
 #Ideally I would include it in CanLad_Processing but we developed it later.
 #need fasterize for NFDB - we might as well tile it in advance too
 #in hindsight, should have buffered the NFDB fire, as we might end up with "salt and pepper" harvest/fire.
-if (FALSE) {
-  Require("fasterize")
-  #template raster will be the processed age data.
-  age <- rast("GIS/Eastern_CaNFIR_att_age_S_1985_v0.tif")
-  ageRTM <- raster("GIS/Eastern_CaNFIR_att_age_S_1985_v0.tif")
-  #get map of forest management (2020) hopefully this isn't outdated... make sure to check
-  #values are 11 - long-term tenure, 12 - short-term tenure, 13 other, 20 Protected aras,
-  #31 Federal reserve, 32 Indian Reserve, 33 Restricted, 40 Treaty and Settlement, 50 Private forests
-  ManagedForest <- prepInputs(url = paste0("https://drive.google.com/file/d",
-                                                 "/1W2EiRtHj_81ZyKk5opqMkRqCA1tRMMvB/view?usp=share_link"),
-                                    fun = "terra::rast",
-                                    destinationPath = "GIS",
-                                    targetFile = "Canada_MFv2017.tif")
-  ManagedForest <- postProcessTerra(from = ManagedForest, to = age,
-                                    writeTo = "GIS/Eastern_ManagedForest.tif",
-                                    method = "near", datatype = "INT1U")
-  ManagedForest <- raster("GIS/Eastern_ManagedForest.tif")
-  mfTiles <- list.files("GIS/tiles", pattern = "MFv2020", full.names = TRUE)
 
-
-  if (length(mfTiles) < 1) {
-
-    SpaDES.tools::splitRaster(ManagedForest, nx = nx, ny = ny, buffer = c(35, 35), rType = "INT1U", path = "GIS/tiles")
-  }
-  rm(ManagedForest)
-
-  #might as well prep the NFDB in advance
-  NFDB <- Cache(prepInputs,
-                url = "https://cwfis.cfs.nrcan.gc.ca/downloads/nfdb/fire_poly/current_version/NFDB_poly.zip",
-                destinationPath = "GIS", fun = "st_read",
-                userTags = c("NFDB"))
-  NFDB <- NFDB[NFDB$YEAR > 1964 & NFDB$YEAR < 1986,]
-  NFDB <- sf::st_transform(NFDB, crs = st_crs(ageRTM))
-
-  NFDBras <- fasterize(NFDB, raster = ageRTM, field = "YEAR")
-
-  writeRaster(NFDBras, "GIS/NFDB_raster_1965_1985.tif", overwrite = TRUE)
-  rm(NFDBras)
-  NFDBras <- raster("GIS/NFDB_raster_1965_1985.tif") #this was 60 GB  in RAM
-  #tile the NFDB
-  fireTiles <- list.files("GIS/tiles", pattern = "NFDB", full.names = TRUE)
-  if (length(mfTiles) < 1) {
-    names(NFDBras) <- "Eastern_NFDB"
-    SpaDES.tools::splitRaster(NFDBras, nx = nx, ny = ny, buffer = c(35, 35),
-                              rType = "INT2U", path = "GIS/tiles")
-
-  }
-
-}
 #in hindsight, didn't need to restrict fire year to 65-85 in the rasterized version
 #also I assume 20 is valid as a regenerating stand (older than twenty..?)
-InferDisturbances <- function(NFDB, MngFor, age, lcc, dBaseYear = 1985) {
+InferDisturbances <- function(NFDB, MngFor, age, lcc, dBaseYear = 1985, outDir) {
   tileNum <- stringr::str_extract(age, pattern = "tile[0-9]+")
   #Non-forest pixels are 0 age, therefore I need Landcover 1985
   age <- rast(age)
@@ -114,7 +66,7 @@ InferDisturbances <- function(NFDB, MngFor, age, lcc, dBaseYear = 1985) {
   fireRepVals[fire] <- 1
   fire <- setValues(NFDB, fireRepVals)
   gc()# for data.table overwrite
-  outFile <- file.path("outputs/raw", paste0("naturalDisturbance", dBaseYear,"_", tileNum, ".tif"))
+  outFile <- file.path(outDir, paste0("naturalDisturbance", dBaseYear,"_", tileNum, ".tif"))
   writeRaster(fire, filename = outFile, datatype = "INT1U", overwrite = TRUE)
   rm(fire, fireRepVals)
   gc()
@@ -123,7 +75,7 @@ InferDisturbances <- function(NFDB, MngFor, age, lcc, dBaseYear = 1985) {
   harvestRepVals <-rep(NA, times = ncell(NFDB))
   harvestRepVals[youngHarvest] <- 1
   youngHarvest <- setValues(NFDB, harvestRepVals)
-  outFile <- file.path("outputs/raw", paste0("harvest_0to5_", dBaseYear,"_", tileNum, ".tif"))
+  outFile <- file.path(outDir, paste0("harvest_0to5_", dBaseYear,"_", tileNum, ".tif"))
   writeRaster(youngHarvest, filename = outFile, datatype = "INT1U", overwrite = TRUE)
   rm(youngHarvest, harvestRepVals)
   gc()
@@ -132,7 +84,7 @@ InferDisturbances <- function(NFDB, MngFor, age, lcc, dBaseYear = 1985) {
   harvestRepVals <-rep(NA, times = ncell(NFDB))
   harvestRepVals[oldHarvest] <- 1
   oldHarvest <- setValues(NFDB, harvestRepVals)
-  outFile <- file.path("outputs/raw", paste0("harvest_6to20_", dBaseYear,"_", tileNum, ".tif"))
+  outFile <- file.path(outDir, paste0("harvest_6to20_", dBaseYear,"_", tileNum, ".tif"))
   writeRaster(oldHarvest, filename = outFile, datatype = "INT1U", overwrite = TRUE)
   # outFile <- file.path("outputs", paste0("harvest_6to20_", dBaseYear,  "_focal", focalWindow, "_", tileNum, ".tif"))
   # oldFocal <- terra::focal(oldHarvest, w = focalMatrix, fun = sum, na.rm = TRUE, expand = FALSE,
@@ -143,6 +95,9 @@ InferDisturbances <- function(NFDB, MngFor, age, lcc, dBaseYear = 1985) {
 }
 
 if (runAnalysis) {
+
+  #TODO: decide how to organize these (on Windows, better to write to SSD)
+  outputDir = "outputs/raw"
 
   NFDBlist <- list.files(path = "GIS/tiles", pattern = "NFDB", full.names = TRUE) %>%
     grep(., pattern = ".grd", value = TRUE)
@@ -155,6 +110,7 @@ if (runAnalysis) {
 
   Map(InferDisturbances, NFDB = NFDBlist, MngFor = MngForList,
       age = ageList, lcc = lccList,
-      MoreArgs = list(dBaseYear = 1985))
+      MoreArgs = list(dBaseYear = 1985,
+                      outDir = outputDir))
 }
 

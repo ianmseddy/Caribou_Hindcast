@@ -113,6 +113,55 @@ if (length(unlist(unique(cellNum))) > 1) {
 rm(files, cellNum)
 
 
+##### 1985 disturbance mapping ####
+
+#as we need a template raster, this section is processsed after the CanLAD data
+#template raster will be the processed age data.
+ageRTM <- raster("GIS/Eastern_CaNFIR_att_age_S_1985_v0.tif")
+#get map of forest management (2020) hopefully this isn't outdated... make sure to check
+#values are 11 - long-term tenure, 12 - short-term tenure, 13 other, 20 Protected aras,
+#31 Federal reserve, 32 Indian Reserve, 33 Restricted, 40 Treaty and Settlement, 50 Private forests
+ManagedForest <- prepInputs(url = paste0("https://drive.google.com/file/d",
+                                         "/1W2EiRtHj_81ZyKk5opqMkRqCA1tRMMvB/view?usp=share_link"),
+                            fun = "terra::rast",
+                            destinationPath = "GIS",
+                            targetFile = "Canada_MFv2017.tif")
+ManagedForest <- postProcessTerra(from = ManagedForest, to = ageRTM,
+                                  writeTo = "GIS/Eastern_ManagedForest.tif",
+                                  method = "near", datatype = "INT1U")
+#read it in again as a raster - required for SpaDES.tools::splitRaster
+ManagedForest <- raster("GIS/Eastern_ManagedForest.tif")
+
+#this buffer refers to pixels - 35 will be greater than 1 km, ensuring no edge effect when we merge back.
+#(there is still an edge effect on the provincial land borders, ie Ontario/Manitoba)
+splitRaster(ManagedForest, nx = nx, ny = ny, buffer = c(35, 35), rType = "INT1U", path = "GIS/tiles")
+
+rm(ManagedForest)
+
+NFDB <- Cache(prepInputs,
+              url = "https://cwfis.cfs.nrcan.gc.ca/downloads/nfdb/fire_poly/current_version/NFDB_poly.zip",
+              destinationPath = "GIS", fun = "st_read",
+              userTags = c("NFDB"))
+NFDB <- NFDB[NFDB$YEAR > 1964 & NFDB$YEAR < 1986,]
+NFDB <- sf::st_transform(NFDB, crs = st_crs(ageRTM))
+
+#fasterize does not have a filename argument, so this raster will temporarily exist in RAM.
+NFDBras <- fasterize(NFDB, raster = ageRTM, field = "YEAR")
+
+writeRaster(NFDBras, "GIS/NFDB_raster_1965_1985.tif", overwrite = TRUE)
+rm(NFDBras)
+gc()
+NFDBras <- raster("GIS/NFDB_raster_1965_1985.tif")
+#tile the NFDB
+fireTiles <- list.files("GIS/tiles", pattern = "NFDB", full.names = TRUE)
+if (length(mfTiles) < 1) {
+  names(NFDBras) <- "Eastern_NFDB"
+  SpaDES.tools::splitRaster(NFDBras, nx = nx, ny = ny, buffer = c(35, 35),
+                            rType = "INT2U", path = "GIS/tiles")
+
+}
+
+
 #The CaNFIR and CanLAD data
 # [1] "CaNFIR_att_age_S_2020_v0-001.tif" stand age
 # [2] "CaNFIR_att_closure_S_1985_v0-006.tif" canopy closure 1985
@@ -128,86 +177,3 @@ rm(files, cellNum)
 # Treed Broadleaf (5) Treed Conifer (6) Treed Mixed (7) Water (8)
 
 
-#Leblond formula
-# section 4.1 of Leblond et al 2014
-# 0.25 * mature conifer  > 70 yo  --- uses CaNFIR_att_age,
-# 0.19 * young mature conifer forests 50-70 years old
-# 0.14 * wetlands
-# 0.22 * open lichen woodlands (age 50+ conifers with < 30% cover)
-# 0.06 * natural disturbances < 20
-# 0.04 * cutblocks 5 yo or less
-# 0.04 * cutblocks 6-20 - same weight as 5yo but s.d. is different
-# 0.06 * regenerating stands > 20 years post disturbance (but that aren't mature conifers or wetlands)
-
-#calculate the binaries, then focal statistics, then multiply the resulting fraction by its weight.
-#so an area of 1 km that is entirely natural disturbance < 20 becomes 0.06. Then we sum the weights?
-#since these are mutually exclusive, the theoretical maximum will be 0.25 (a square km of mature conifer > 70 y.o)
-
-# In order
-#1)	Identify the two mature conifer classes, age 50-70 and 70+, with canopy closure > 30%
-
-
-
-source("tiles_MatureConifers.R")
-#2)	Identify the natural disturbances < 20 y.o
-source("tiles_NaturalDisturbanceStands.R")
-#3)	Identify the two age classes of regenerating cutblocks (0-5 and 6-20)
-source("tiles_HarvestedStands.R")
-
-#4)	Identify the Open Lichen Woodlands: conifers age 50+ with canopy closure < 30% that aren't wetlands
-#this assumse that ages and disturbances are consistent
-source("tiles_OpenWoodlands.R")
-
-#5)	Identify Regenerating Stands: any stands that aren't one of the above classes.
-#this class includes majority-conifer pixels that are 21-49 years of age, and deciduous stands age 20+ that aren't wetland.
-#it also includes pixels that are younger than 20 but not disturbed, this class was identified afterward.
-#some of these deciduous 20+ may be wetland - these will be classified as wetland instead
-#since disturbance supersedes all - must check that the 20-50 are also undisturbed..
-source("tiles_regeneratingStands.R")
-
-#6)	Identify wetlands
-#per Mathieu, wetland was Alnus spp, open (ie non forest) or flooded. Alnus is an 'unproductive' land cover class
-#therefore, 'mature conifer' that falls under wetland would still be mature conifer.
-#Our wetland will be non-forest wetland, deciduous 20+, and age 50+ conifer with cover <30%
-##TODO: split the landcover class raster
-source("tiles_wetland.R")
-
-covariates2020 <- c("matureConifer", "youngConifer", "openWoodland", "regenerating",
-                "wetland", "harvest_0to5", "harvest_6to20", "naturalDisturbance")
-#don't use lapply as we don't want 7 rasters
-
-#setValues as an intermediate step causes the raster to be in memory, blowing up RAM use to > 100 GB
-#in hindsight I should have multiplied the focal values before writing them to disk
-lapply(covariates2020, FUN = function(x){
-  output <- list.files(pattern = x, path = "outputs",full.names = TRUE) %>%
-    grep(., pattern = "2020", value = TRUE) %>%
-    lapply(., FUN = function(x) {raster(x) * 1000}) %>%
-    #the above line created 400 GB of rasters in my tempdrive.... lol
-    mergeRaster(.)
-  gc()
-  raster::writeRaster(x = output, filename = paste0("outputs/final/", x, 2020, "_focal.tif"),
-                      datatype = "INT2U", overwrite = TRUE)
-  #we can delete these newTiles later -
-  rm(output)
-  gc()
-})
-
-
-
-####plotting ### turns out we had some GIS errors as one machine used terra 1.6
-#this caused the cutline row and column to be included, so we have 2 extra cols/rows
-# output <- list.files(path = "outputs/final", pattern = ".tif$", full.names = TRUE) %>%
-#  lapply(., rast)
-# sourceNames <- sapply(output, sources)
-# covariateNames <- names(sort(sapply(covariates2020, FUN = grep, x = sourceNames)))
-# names(output) <- covariateNames
-# newMat <- crop(output$matureConifer, output$wetland)
-# writeRaster(newMat, filename = "outputs/final/matureConifer2020_focal.tif", overwrite = TRUE)
-# newYoung <- crop(output$youngConifer, output$wetland) #will have to rewrite these..
-# writeRaster(newYoung, "outputs/final/youngConifer2020_focal.tif", overwrite = TRUE)
-
-output <- list.files(path = "outputs/final", pattern = ".tif$", full.names = TRUE) %>%
-  raster::stack(.)
-quickPlot::Plot(output, title = c("harvest 0-5", "harvest 6-20", "mature Conifer",
-                                  "natural disturbance", "open woodland", "regenerating forest",
-                                  "wetland", "young Conifer"))
