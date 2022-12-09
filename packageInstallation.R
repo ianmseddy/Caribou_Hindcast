@@ -12,6 +12,8 @@ Require("checkpoint", upgrade = FALSE)
 Require("remotes", upgrade = FALSE)
 # checkpoint("2021-01-01", r_version = "4.2.0", checkpoint_location = packageDir)
 
+#at the moment this terra version throws obnoxious but harmless errors. Upgrading to source would solve the issue,
+#but the source version was unavailable when I began this project.
 Require::Require(packages = c("terra (>=1.6.7)", "sf", "data.table", "reproducible (>=1.2.10.9001)",
           "stringr", "raster", "googledrive", "magrittr", "parallel", "SpaDES.tools", "fasterize"),
         upgrade = FALSE)

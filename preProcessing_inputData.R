@@ -5,8 +5,9 @@ options("reproducible.cachePath" = "cache")
 setDTthreads(4)
 runAnalysis <- FALSE #if TRUE, will remake the GIS layers
 focalRadius <- 1000 #the radius to use for focal statistics, in metres
-nx = 3 #referring to tiles -
-ny = 2 #referring to tiles
+nx = 3 #referring to tile columns
+ny = 3 # referring to tile rows
+#a silly utility function
 getYear <- function(pat, List) { return(List[grep(pat, List)])}
 
 
@@ -14,34 +15,41 @@ checkPath("data", create = TRUE)
 checkPath("outputs", create = TRUE)
 checkPath("outputs/raw", create = TRUE)
 checkPath("GIS/tiles", create = TRUE)
-#cropping takes 15 minutes a layer - so write some intermediate files - reducing size by 67% (alternatively cache)
 
-GISfiles <- list("CaNFIR_att_age_S_2020_v0.tif" =
-                   "https://drive.google.com/file/d/18BqqOiwpuY0bZbM1DMmYi5sDnfTb0JIH/view?usp=sharing",
-                 "CaNFIR_att_age_S_1985_v0.tif" =
-                   "https://drive.google.com/file/d/18C_riLq0l7xG5Dd5UeYa0Gu3zbUtOUuo/view?usp=sharing",
-                 "CaNFIR_att_closure_S_2020_v0.tif" =
-                   "https://drive.google.com/file/d/17e_qPKROfWsB7Wa2ObMIvtwRgk1GBsM_/view?usp=sharing",
-                 "CaNFIR_att_closure_S_1985_v0.tif" =
-                   "https://drive.google.com/file/d/17Cna_8zZzcFAJUoUJx9QYTPqQpTdCsXi/view?usp=sharing",
-                 "CaNFIR_sps_prcD_S_2020_v0.tif" =
-                   "https://drive.google.com/file/d/17PRFhPw3e26sJonTxnbU12Lw7Cmtmp3s/view?usp=sharing",
-                 "CaNFIR_sps_prcD_S_1985_v0.tif" =
-                   "https://drive.google.com/file/d/16yhcNWll7RKd1-t7R-cHcPII-4Wua9Zp/view?usp=sharing",
-                 "CaNFIR_att_land_pos_S_2020_v0.tif" =
-                   "https://drive.google.com/file/d/17aACgxp6an0WSzBNn0_5gsaza_aPTVmH/view?usp=sharing",
+#alternatively get entire folder at https://drive.google.com/drive/folders/10-abXWuOiXm35Orfko33tXsui2_Jx1Hb?usp=share_link
+
+##
+# googledrive::drive_auth("<your email>")
+googledrive::drive_auth("ian.eddy@nrcan-rncan.gc.ca")
+
+GISfiles <- list("SCANFI_att_age_S_2020_v0.tif" =
+                   "https://drive.google.com/file/d/10dMdxii63X4zufdCOGb6DK18V_qVdeqF/view?usp=share_link",
+                 "SCANFI_att_age_S_1985_v0.tif" =
+                   "https://drive.google.com/file/d/10Xg7eBb_46nch0NTLfBzJz37l-lBI9Sb/view?usp=share_link",
+                 "SCANFI_att_closure_S_2020_v0.tif" =
+                   "https://drive.google.com/file/d/10rYVC35xsp-PQ_IsTe_OxLRuBMLdlyKG/view?usp=share_link",
+                 "SCANFI_att_closure_S_1985_v0.tif" =
+                   "https://drive.google.com/file/d/10eyP-q3Bf0Hq944Y2RjDKqix--L_Cq8O/view?usp=share_link",
+                 "SCANFI_sps_prcD_S_2020_v0.tif" =
+                   "https://drive.google.com/file/d/10F3ixB5GehFb3Bg_bcmlZw46Ph8JVskp/view?usp=share_link",
+                 "SCANFI_sps_prcD_S_1985_v0.tif" =
+                   "https://drive.google.com/file/d/10GxCWeplsh7ns2DDihk7VVWDqCuHxKuh/view?usp=share_link",
+                 "SCANFI_att_land_pos_S_2020_v0.tif" =
+                   "https://drive.google.com/file/d/11L81hDLGbDg1GqyRWqfACDmE6xTFIiZq/view?usp=share_link",
                  #assume land position is constant between 1985-2020,
-                 "CaNFIR_att_VegTypeClass_S_2020_v0.tif" =
-                 "https://drive.google.com/file/d/1-SO9bXl0trI48IDKvshgDR4qLVPM5X3n/view?usp=sharing",
+                 "SCANFI_att_VegTypeClass_S_2020_v0.tif" =
+                 "https://drive.google.com/file/d/11evgT3klHt4U6qImkuibxjIj6MFCEdOG/view?usp=share_link",
+                 "SCANFI_att_VegTypeClass_S_1985_v0.tif" =
+                 "https://drive.google.com/file/d/11SHnzGDoIL1bqHV5YJCna2GrlPBH3CpW/view?usp=share_link",
                  "CanLaD_Latest_1985_2020_YRT2.tif" =
                    "https://drive.google.com/file/d/19tSq6xsHks-5xMrDGZcAqFUJziESUw8f/view?usp=sharing",
                  "CanLaD_Latest_1985_2020_TYPE.tif" =
                    "https://drive.google.com/file/d/19gEzpGFNbHbL8agLCfLFMBOJYaoYZQns/view?usp=sharing")
 
-#normally I would use reproducible::prepInputs but I don't want to CHECKSUMS nor load these
-CanLadData <- as.list(file.path("GIS", names(GISfiles)))
 
-downloadedFiles <- lapply(CanLadData, file.exists)
+CanLaD_and_SCaNFI <- as.list(file.path("GIS", names(GISfiles)))
+
+downloadedFiles <- lapply(CanLaD_and_SCaNFI, file.exists)
 if (!all(unlist(downloadedFiles))) {
   missingFiles <- GISfiles[!unlist(downloadedFiles)]
   #download fails in a vectorized function
@@ -51,22 +59,30 @@ if (!all(unlist(downloadedFiles))) {
   }
   rm(missingFiles, downloadedFiles)
 }
-
+#study area is the intersection of Quebec/Ontario and ecozones
 Canada <- prepInputs(url = paste0("https://www12.statcan.gc.ca/census-recensement/2011/",
                                   "geo/bound-limit/files-fichiers/2016/lpr_000b16a_e.zip"),
                      destinationPath = "GIS",
                      fun = "terra::vect")
-#East of Manitoba, ignoring Nunavut
-SA <- Canada[Canada$PRUID %in% c("10", "11", "12", "13", "24", "35"),]
+QuebecOntario <- Canada[Canada$PRUID %in% c("24", "35"),]
+
+Ecozones <- prepInputs(url = "https://sis.agr.gc.ca/cansis/nsdb/ecostrat/zone/ecozone_shp.zip",
+                       destinationPath = "GIS",
+                       fun = "terra::vect",
+                       studyArea = QuebecOntario)
+Ecozones <- Ecozones[Ecozones$ZONE_NAME %in% c("Taiga Shield", "Boreal Shield", "MixedWood Plain", "Hudson Plains")]
+SA <- terra::aggregate(Ecozones)
+
 
 # SA <- terra::project(SA, "EPSG:9001")
 
-processed <- paste0("GIS/Eastern_",basename( unlist(CanLadData)))
+processed <- paste0("GIS/Eastern_",basename( unlist(CanLaD_and_SCaNFI)))
 missing <- processed[!file.exists(processed)]
+#postProcessTerra is leaving some files in tempdrive - FYI
 if (length(missing) > 0) {
-  inFiles <- CanLadData[processed %in% missing]
+  inFiles <- CanLaD_and_SCaNFI[processed %in% missing]
   bulkPostProcess <- function(infile, SA){
-    dType <- "INT2U" #apparently they were signed, only for the NA?
+    dType <- "INT2U" #age and disturbance year were signed, only for the NA?
     outName <- file.path("GIS", paste0("Eastern_", basename(infile)))
     infile <- rast(infile)
     SA <- project(SA, crs(infile))
@@ -98,7 +114,7 @@ if (any(notTiled < 1)) {
   })
 }
 
-rm(CanLadData, missing)
+rm(CanLaD_and_SCaNFI, missing)
 
 ####sanity check####
 files <- list.files("GIS", pattern = "tif", full.names = TRUE) %>%
