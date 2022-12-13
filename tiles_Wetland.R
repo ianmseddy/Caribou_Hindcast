@@ -1,13 +1,8 @@
-ageList <- list.files(path = "GIS/tiles", pattern = "att_age", full.names = TRUE) %>%
-  grep(., pattern = ".grd", value = TRUE)
-landPosList <- list.files(path = "GIS/tiles", pattern = "land_pos", full.names = TRUE) %>%
-  grep(., pattern = ".grd", value = TRUE)
-lccList <- list.files(path = "GIS/tiles", pattern = "VegType", full.names = TRUE) %>%
-  grep(., pattern = ".grd", value = TRUE)
-percDecidList <- list.files(path = "GIS/tiles", pattern = "prcD", full.names = TRUE) %>%
-  grep(., pattern = ".grd", value = TRUE)
-canopyCoverList <- list.files(path = "GIS/tiles", pattern = "att_closure", full.names = TRUE) %>%
-  grep(., pattern = ".grd", value = TRUE)
+ageList <- list.files(path = "GIS/tiles", pattern = "att_age", full.names = TRUE)
+landPosList <- list.files(path = "GIS/tiles", pattern = "land_pos", full.names = TRUE)
+lccList <- list.files(path = "GIS/tiles", pattern = "VegType", full.names = TRUE)
+percDecidList <- list.files(path = "GIS/tiles", pattern = "prcD", full.names = TRUE)
+canopyCoverList <- list.files(path = "GIS/tiles", pattern = "att_closure", full.names = TRUE)
 
 Wetland <- function(age, landPos, lcc, canopyCover, percDecid, dBaseYear) {
 

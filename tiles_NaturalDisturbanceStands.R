@@ -1,32 +1,44 @@
 #### natural disturbances that occured within 20 years.####
-#Because the disturbance time-series begins in 1985, the first year for which we can guarantee a stand originated from fire
+#Because the disturbance time-series begins in 1985, the first year for which we can guarantee a stand originated from natural process
 # would be 2005 (ie in 1985 we do not know stands <20 y.o. originated from fire or harvest)
-dTypeList <- list.files(path = "GIS/tiles", pattern = "1985_2020_TYPE", full.names = TRUE) %>%
-  grep(., pattern = ".grd", value = TRUE)
-dYearList <- list.files(path = "GIS/tiles", pattern = "1985_2020_YRT2", full.names = TRUE) %>%
-  grep(., pattern = ".grd", value = TRUE)
+dTypeList <- list.files(path = "GIS/tiles", pattern = "1985_2020_TYPE", full.names = TRUE)
+dYearList <- list.files(path = "GIS/tiles", pattern = "1985_2020_YRT2", full.names = TRUE)
 
 
-RecentNaturalDist <- function(dType, dYear, dBaseYear){
+#assume that if a pixel is under 20-years of age, forested, and has no harvest record, it was due to natural disturbance
+RecentNaturalDist <- function(dType, dYear, age, dBaseYear, lcc){
 
   tileNum <- stringr::str_extract(dType, pattern = "tile[0-9]+")
   dType <- rast(dType)
   dYear <- rast(dYear)
+  age <- rast(age)
+  lcc <- rast(lcc)
 
-  compareGeom(dType, dYear)
+  compareGeom(dYear, lcc)
+  compareGeom(dType, dYear, age)
 
-  burnDT <- data.table(pixelID = 1:ncell(dType), burn = values(dType, mat = FALSE))
-
-  names(burnDT) <- c("pixelID", "burn")
-  burnDT <- burnDT[burn == 1,]
-  rm(dType)
+  burnDT <- data.table(pixelID = 1:ncell(dType), burn = values(dYear), age = values(age))
+  names(burnDT) <- c("pixelID", "burn", "age")
+  burnDT <- burnDT[burn == 1 | c(burn != 2 & age < 21)]
   gc()
-  burnDT[, year := dYear[][burnDT$pixelID]]
+  burnDT[, year := dYear[burnDT$pixelID]]
+  burnDT <- burnDT[c(year <= dBaseYear & year + 20 >= dBaseYear) | age < 21]
+  #the above operation ensures that the function can accept any year with an accompanying age and lcc layer
+
+  burnDT[, year := NULL]
+  gc()
+  burnDT[, lcc := lcc[burnDT$pixelID]]
+  browser()
+  #TODO: check how many (if any) burns occur on non-forest.
+  burnDT <- burnDT[lcc %in% c(5:7)] #this means burned non-forest is dropped. worth investigating...
+  gc()
+  burnDT <- burnDT$pixeLID
+
   #easier to do the logical queries on the non-NA and then rebuild the rasters with the eventual binary values
   burnVals <- rep(NA, ncell(dYear))
   #20 = year <= dBaseYear & year + 20 > dBaseYear
   #in 2020, a pixel that burned in 2000 would be last to qualify
-  burnVals[burnDT[year <= dBaseYear & year + 20 >= dBaseYear]$pixelID] <- 1
+  burnVals[burnDT] <- 1
   rm(burnDT)
   outRas <- rast(dYear)
   outRas <- setValues(x = outRas, burnVals)

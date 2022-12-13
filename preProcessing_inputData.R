@@ -10,9 +10,7 @@ ny = 3 # referring to tile rows
 #a silly utility function
 getYear <- function(pat, List) { return(List[grep(pat, List)])}
 
-
-checkPath("data", create = TRUE)
-checkPath("outputs", create = TRUE)
+#create some folders for output
 checkPath("outputs/raw", create = TRUE)
 checkPath("GIS/tiles", create = TRUE)
 
@@ -110,7 +108,8 @@ if (any(notTiled < 1)) {
     asRaster <- raster(file.path("GIS", paste0(toTile, ".tif"))) #must be raster
     Type <- ifelse(length(grep("YR|age", toTile)) == 1, "INT2U", "INT1U") #technically 240 is max age?
     #cc, percD, landcover, pos, all under 255
-    SpaDES.tools::splitRaster(asRaster, nx = nx, ny = ny, buffer = c(35, 35), rType = Type, path = "GIS/tiles")
+    SpaDES.tools::splitRaster(asRaster, nx = nx, ny = ny, buffer = c(35, 35),
+                              rType = Type, path = "GIS/tiles", fExt = ".tif")
   })
 }
 
@@ -133,10 +132,12 @@ rm(files, cellNum)
 
 #as we need a template raster, this section is processsed after the CanLAD data
 #template raster will be the processed age data.
-ageRTM <- raster("GIS/Eastern_CaNFIR_att_age_S_1985_v0.tif")
+ageRTM <- raster("GIS/Eastern_SCANFI_att_age_S_2020_v0.tif")
 #get map of forest management (2020) hopefully this isn't outdated... make sure to check
 #values are 11 - long-term tenure, 12 - short-term tenure, 13 other, 20 Protected aras,
 #31 Federal reserve, 32 Indian Reserve, 33 Restricted, 40 Treaty and Settlement, 50 Private forests
+
+#TODO: this is stored on my (personal) googledrive - change file settings
 ManagedForest <- prepInputs(url = paste0("https://drive.google.com/file/d",
                                          "/1W2EiRtHj_81ZyKk5opqMkRqCA1tRMMvB/view?usp=share_link"),
                             fun = "terra::rast",
@@ -145,12 +146,14 @@ ManagedForest <- prepInputs(url = paste0("https://drive.google.com/file/d",
 ManagedForest <- postProcessTerra(from = ManagedForest, to = ageRTM,
                                   writeTo = "GIS/Eastern_ManagedForest.tif",
                                   method = "near", datatype = "INT1U")
+gc()
 #read it in again as a raster - required for SpaDES.tools::splitRaster
 ManagedForest <- raster("GIS/Eastern_ManagedForest.tif")
 
 #this buffer refers to pixels - 35 will be greater than 1 km, ensuring no edge effect when we merge back.
 #(there is still an edge effect on the provincial land borders, ie Ontario/Manitoba)
-splitRaster(ManagedForest, nx = nx, ny = ny, buffer = c(35, 35), rType = "INT1U", path = "GIS/tiles")
+splitRaster(ManagedForest, nx = nx, ny = ny, buffer = c(35, 35),
+            rType = "INT1U", path = "GIS/tiles", fExt = ".tif")
 
 rm(ManagedForest)
 
@@ -170,10 +173,10 @@ gc()
 NFDBras <- raster("GIS/NFDB_raster_1965_1985.tif")
 #tile the NFDB
 fireTiles <- list.files("GIS/tiles", pattern = "NFDB", full.names = TRUE)
-if (length(mfTiles) < 1) {
+if (length(fireTiles) < 1) {
   names(NFDBras) <- "Eastern_NFDB"
   SpaDES.tools::splitRaster(NFDBras, nx = nx, ny = ny, buffer = c(35, 35),
-                            rType = "INT2U", path = "GIS/tiles")
+                            rType = "INT2U", path = "GIS/tiles", fExt = ".tif")
 
 }
 

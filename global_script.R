@@ -33,7 +33,7 @@ source("tiles_MatureConifers.R")
 #therefore, 'mature conifer' that falls under wetland would still be mature conifer.
 #Our wetland will be non-forest wetland, deciduous 20+, and age 50+ conifer with cover <30%
 ##TODO: split the landcover class raster
-source("tiles_wetland.R")
+source("tiles_Wetland.R")
 
 #3)	Identify the natural disturbances < 20 y.o
 #TODO: this should also use age to classify under 20 stands that weren't in CanLaD (windthrow)
@@ -52,7 +52,7 @@ source("tiles_OpenWoodlands.R")
 #many age 20+ stands are also disturbed < 20 y.a, as the two datasets don't need to agree.
 #TODO: read the disturbances tiles in, and mask the regeneraring stand here. Saves running masking script
 #TODO: also drop the 20+ part.
-source("tiles_regeneratingStands.R")
+source("tiles_RegeneratingStands.R")
 
 
 
