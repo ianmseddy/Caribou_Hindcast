@@ -3,34 +3,31 @@
 # would be 2005 (ie in 1985 we do not know stands <20 y.o. originated from fire or harvest)
 dTypeList <- list.files(path = "GIS/tiles", pattern = "1985_2020_TYPE", full.names = TRUE)
 dYearList <- list.files(path = "GIS/tiles", pattern = "1985_2020_YRT2", full.names = TRUE)
+landPosList <- list.files(path = "GIS/tiles", pattern = "land_pos", full.names = TRUE)
 
-
-#assume that if a pixel is under 20-years of age, forested, and has no harvest record, it was due to natural disturbance
-RecentNaturalDist <- function(dType, dYear, age, dBaseYear, lcc){
+RecentNaturalDist <- function(dType, dYear, dBaseYear, landPos){
 
   tileNum <- stringr::str_extract(dType, pattern = "tile[0-9]+")
   dType <- rast(dType)
   dYear <- rast(dYear)
-  age <- rast(age)
+  landPos <- rast(landPos)
   lcc <- rast(lcc)
 
-  compareGeom(dYear, lcc)
-  compareGeom(dType, dYear, age)
+  compareGeom(dYear, lcc, landPos)
+  compareGeom(dType, dYear)
 
-  burnDT <- data.table(pixelID = 1:ncell(dType), burn = values(dYear), age = values(age))
+  burnDT <- data.table(pixelID = 1:ncell(dType), burn = values(dYear))
   names(burnDT) <- c("pixelID", "burn", "age")
-  burnDT <- burnDT[burn == 1 | c(burn != 2 & age < 21)]
+  burnDT <- burnDT[burn == 1]
   gc()
   burnDT[, year := dYear[burnDT$pixelID]]
-  burnDT <- burnDT[c(year <= dBaseYear & year + 20 >= dBaseYear) | age < 21]
-  #the above operation ensures that the function can accept any year with an accompanying age and lcc layer
+  burnDT <- burnDT[c(year <= dBaseYear & year + 20 >= dBaseYear)]
 
   burnDT[, year := NULL]
   gc()
-  burnDT[, lcc := lcc[burnDT$pixelID]]
-  browser()
-  #TODO: check how many (if any) burns occur on non-forest.
-  burnDT <- burnDT[lcc %in% c(5:7)] #this means burned non-forest is dropped. worth investigating...
+  burnDT[, pos := landPos[burnDT$pixelID]]
+
+  burnDT <- burnDT[pos != 5] #wetland habitat supersedes natural disturbance
   gc()
   burnDT <- burnDT$pixeLID
 
@@ -45,16 +42,12 @@ RecentNaturalDist <- function(dType, dYear, age, dBaseYear, lcc){
 
   outFile <- file.path("outputs/raw", paste0("naturalDisturbance", dBaseYear,"_", tileNum, ".tif"))
   writeRaster(outRas, filename = outFile, datatype = "INT1U", overwrite = TRUE)
-  # focalMatrix <- terra::focalMat(x = outRas, d = focalWindow, type = "circle")
-  # outFile <- file.path("outputs", paste0("naturalDisturbance", dBaseYear,  "_focal", focalWindow, "_", tileNum, ".tif"))
-  # focalOut <- terra::focal(outRas, w = focalMatrix, sum, na.rm = TRUE, expand = FALSE,
-  #                          filename = outFile, overwrite = TRUE)
-  #recording focal window size in filename in case it changes.
+
   rm(outRas)
   gc()
 }
 #
 if (runAnalysis) {
-  Map(RecentNaturalDist, dType = dTypeList, dYear = dYearList,
+  Map(RecentNaturalDist, dType = dTypeList, dYear = dYearList, landPos = landPosList,
       MoreArgs = list(dBaseYear = 2020))
 }
