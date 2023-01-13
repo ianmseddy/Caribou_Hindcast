@@ -27,7 +27,7 @@ OpenWoodlands <- function(age, canopyCover, percDecid, pos, dBaseYear) {
   canopyCover <- rast(canopyCover)
   dt[, cover := canopyCover[][dt$pixelID]]
   #keeping index outside of values (i.e. instead of canopyCover[<index>])
-  dt <- dt[cover < 30,]
+  dt <- dt[cover < 25,]
   dt[, cover := NULL]
   rm(canopyCover)
   gc()
