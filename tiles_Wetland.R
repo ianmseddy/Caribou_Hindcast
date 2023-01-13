@@ -1,10 +1,5 @@
-ageList <- list.files(path = "GIS/tiles", pattern = "att_age", full.names = TRUE)
-landPosList <- list.files(path = "GIS/tiles", pattern = "land_pos", full.names = TRUE)
-lccList <- list.files(path = "GIS/tiles", pattern = "VegType", full.names = TRUE)
-percDecidList <- list.files(path = "GIS/tiles", pattern = "prcD", full.names = TRUE)
-canopyCoverList <- list.files(path = "GIS/tiles", pattern = "att_closure", full.names = TRUE)
-
-Wetland <- function(age, landPos, lcc, canopyCover, percDecid, dBaseYear) {
+Wetland <- function(age, landPos, lcc, canopyCover, percDecid,
+                    youngConifer, matureConifer, dBaseYear) {
 
   tileNum <- stringr::str_extract(age, pattern = "tile[0-9]+")
 
@@ -28,6 +23,16 @@ Wetland <- function(age, landPos, lcc, canopyCover, percDecid, dBaseYear) {
   rm(landPos)
   dt[, landPos := NULL]
   gc()
+
+  #mature and young Conifer
+  matureConifer <- rast(matureConifer)
+  youngConifer <- rast(youngConifer)
+  dt[, matCon := matureConifer[pixelID]]
+  dt[, youngCon := youngConifer[pixelID]]
+  dt <- dt[is.na(matCon) & is.na(youngCon)]
+  dt[, c("matCon", "youngCon") := NULL]
+  rm(matureConifer, youngConifer)
+
 
   #lcc
   lcc <- rast(lcc)
@@ -80,22 +85,33 @@ Wetland <- function(age, landPos, lcc, canopyCover, percDecid, dBaseYear) {
 
 if (runAnalysis) {
   #2020 first
-  landPosList2020 <- getYear(2020, landPosList)
-  ageList2020 <- getYear(2020, ageList)
-  canopyCoverList2020 <- getYear(2020, canopyCoverList)
-  percDecidList2020 <- getYear(2020, percDecidList)
-  Map(Wetland, age = ageList2020, landPos = landPosList2020, lcc = lccList,
+
+  #TODO: rethink this whole "getYear" approach. It is ridiculous that we do this each time
+  landPosList2020 <- getAtt(Att = "land_pos", Year = 2020)
+  ageList2020 <- getAtt(Att = "age", 2020)
+  canopyCoverList2020 <- getAtt("att_closure", 2020)
+  percDecidList2020 <- getAtt("prc", 2020)
+  lccList2020 <- getAtt("VegType", 2020)
+  youngConList2020 <- getAtt("youngCon", 2020, Path = "outputs/raw")
+  MatureConList2020 <- getAtt("matureCon", 2020, Path = "outputs/raw")
+  Map(Wetland, age = ageList2020, landPos = landPosList2020, lcc = lccList2020,
+      matureConifer = MatureConList2020, youngConifer = youngConList2020,
       percDecid = percDecidList2020, canopyCover = canopyCoverList2020,
       MoreArgs = list(dBaseYear = 2020))
-  #1985 afer
-  #landPos only exists for 1985, I believe?
-  ageList1985 <- getYear(1985, ageList)
-  canopyCoverList1985 <- getYear(1985, canopyCoverList)
-  percDecidList1985 <- getYear(1985, percDecidList)
-  Map(Wetland, age = ageList1985, landPos = landPosList, lcc = lccList,
+
+
+  #1985
+  landPosList1985 <- getAtt(Att = "land_pos", Year = 1985)
+  ageList1985 <- getAtt(Att = "age", 1985)
+  canopyCoverList1985 <- getAtt("att_closure", 1985)
+  percDecidList1985 <- getAtt("prc", 1985)
+  lccList1985 <- getAtt("vegType", 1985)
+  youngConList1985 <- getAtt("youngCon", 1985, Path = "outputs/raw")
+  MatureConList1985 <- getAtt("matureCon", 1985, Path = "outputs/raw")
+  Map(Wetland, age = ageList1985, landPos = landPosList1985, lcc = lccList1985,
+      matureConifer = MatureConList1985, youngConifer = youngConList1985,
       percDecid = percDecidList1985, canopyCover = canopyCoverList1985,
       MoreArgs = list(dBaseYear = 1985))
-
 
 }
 

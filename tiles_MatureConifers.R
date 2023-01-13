@@ -1,10 +1,7 @@
 #identify the age 70 conifer stands with canopy cover > 30%
-canopyCoverList <- list.files(path = "GIS/tiles", pattern = "att_closure", full.names = TRUE) %>%
-  grep(., pattern = ".grd", value = TRUE)
-ageList <- list.files(path = "GIS/tiles", pattern = "att_age", full.names = TRUE) %>%
-  grep(., pattern = ".grd", value = TRUE)
-percDecidList <- list.files(path = "GIS/tiles", pattern = "prcD", full.names = TRUE) %>%
-  grep(., pattern = ".grd", value = TRUE)
+canopyCoverList <- list.files(path = "GIS/tiles", pattern = "att_closure", full.names = TRUE)
+ageList <- list.files(path = "GIS/tiles", pattern = "att_age", full.names = TRUE)
+percDecidList <- list.files(path = "GIS/tiles", pattern = "prcD", full.names = TRUE)
 
 MatureConifer <- function(age, canopyCover, percDecid, dBaseYear) {
 
@@ -29,7 +26,7 @@ MatureConifer <- function(age, canopyCover, percDecid, dBaseYear) {
   canopyCover <- rast(canopyCover)
   dt[, cover := canopyCover[][dt$pixelID]]
   #keeping index outside of values (i.e. instead of canopyCover[<index>]) is significantly faster!
-  dt <- dt[cover >= 30,]
+  dt <- dt[cover >= 25,]
   dt[, cover := NULL]
   rm(canopyCover)
   gc()
@@ -46,12 +43,9 @@ MatureConifer <- function(age, canopyCover, percDecid, dBaseYear) {
   rm(repvals)
   outFile <- file.path("outputs/raw", paste0("youngConifer", dBaseYear,"_", tileNum, ".tif"))
   writeRaster(youngConifer, filename = outFile, datatype = "INT1U", overwrite = TRUE)
-  # outFile <- file.path("outputs", paste0("youngConifer_", dBaseYear,  "_focal", focalWindow, "_", tileNum, ".tif"))
-  # focalOut <- terra::focal(youngConifer, w = focalMatrix, sum, na.rm = TRUE, expand = FALSE,
-  #                          filename = outFile, overwrite = TRUE)
+
   rm(youngConifer)
   gc()
-
   #write old conifer
   repvals <- rep(NA, times = ncell(age))
   repvals[oldConifer] <- 1
@@ -59,13 +53,11 @@ MatureConifer <- function(age, canopyCover, percDecid, dBaseYear) {
   rm(repvals)
   outFile <- file.path("outputs/raw", paste0("matureConifer", dBaseYear,"_", tileNum, ".tif"))
   writeRaster(oldConifer, filename = outFile, datatype = "INT1U")
-  # outFile <- file.path("outputs", paste0("matureConifer_", dBaseYear,  "_focal", focalWindow, "_", tileNum, ".tif"))
-  # focalOut <- terra::focal(oldConifer, w = focalMatrix, sum, na.rm = TRUE, expand = FALSE,
-  #                          filename = outFile, overwrite = TRUE)
   rm(oldConifer)
   for (i in 1:3) gc() #terra really hangs on for some reason
 
 }
+
 
 if (runAnalysis) {
 
