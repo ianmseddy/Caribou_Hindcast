@@ -3,7 +3,7 @@ canopyCoverList <- list.files(path = "GIS/tiles", pattern = "att_closure", full.
 ageList <- list.files(path = "GIS/tiles", pattern = "att_age", full.names = TRUE)
 percDecidList <- list.files(path = "GIS/tiles", pattern = "prcD", full.names = TRUE)
 
-MatureConifer <- function(age, canopyCover, percDecid, dBaseYear) {
+MatureConifer <- function(age, canopyCover, percDecid, distYear = NULL, dBaseYear) {
 
   tileNum <- stringr::str_extract(age, pattern = "tile[0-9]+")
 
@@ -31,6 +31,15 @@ MatureConifer <- function(age, canopyCover, percDecid, dBaseYear) {
   rm(canopyCover)
   gc()
 
+
+  #remove the pixels that are 20+ but disturbed <20 y.a.
+  if (!is.null(distYear)) {
+    distYear <- rast(distYear)
+    dt[, distYear := distYear[dt$pixelID]]
+    dt <- dt[dBaseYear - distYear > 20,]
+    dt[,distYear := NULL]
+  }
+
   #write young conifer
   age <- rast(age)
   dt[, age := age[][dt$pixelID]]
@@ -52,7 +61,7 @@ MatureConifer <- function(age, canopyCover, percDecid, dBaseYear) {
   oldConifer <- setValues(age, repvals)
   rm(repvals)
   outFile <- file.path("outputs/raw", paste0("matureConifer", dBaseYear,"_", tileNum, ".tif"))
-  writeRaster(oldConifer, filename = outFile, datatype = "INT1U")
+  writeRaster(oldConifer, filename = outFile, datatype = "INT1U", overwrite = TRUE)
   rm(oldConifer)
   for (i in 1:3) gc() #terra really hangs on for some reason
 
@@ -64,9 +73,12 @@ if (runAnalysis) {
   percDecidList2020 <- getYear(2020, percDecidList)
   ageList2020 <- getYear(2020, ageList)
   canopyCoverList2020 <- getYear(2020, canopyCoverList)
-  Map(MatureConifer, age = ageList2020, canopyCover = canopyCoverList2020, percDecid = percDecidList2020,
+  distYearList <- list.files(path = "GIS/tiles", pattern = "YRT2", full.names = TRUE)
+  Map(MatureConifer, age = ageList2020, canopyCover = canopyCoverList2020,
+      percDecid = percDecidList2020, distYear = distYearList,
       MoreArgs = list(dBaseYear = 2020))
 
+  #no need to pass disturbance year in 1985
   percDecidList1985 <- getYear(1985, percDecidList)
   ageList1985 <- getYear(1985, ageList)
   canopyCoverList1985 <- getYear(1985, canopyCoverList)

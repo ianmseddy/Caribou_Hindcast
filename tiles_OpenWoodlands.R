@@ -1,11 +1,7 @@
-canopyCoverList <- list.files(path = "GIS/tiles", pattern = "att_closure", full.names = TRUE) %>%
-  grep(., pattern = ".grd", value = TRUE)
-ageList <- list.files(path = "GIS/tiles", pattern = "att_age", full.names = TRUE) %>%
-  grep(., pattern = ".grd", value = TRUE)
-percDecidList <- list.files(path = "GIS/tiles", pattern = "prcD", full.names = TRUE) %>%
-  grep(., pattern = ".grd", value = TRUE)
-posList <- list.files(path = "GIS/tiles", pattern = "pos", full.names = TRUE) %>%
-  grep(., pattern = ".grd", value = TRUE)
+canopyCoverList <- list.files(path = "GIS/tiles", pattern = "att_closure", full.names = TRUE)
+ageList <- list.files(path = "GIS/tiles", pattern = "att_age", full.names = TRUE)
+percDecidList <- list.files(path = "GIS/tiles", pattern = "prcD", full.names = TRUE)
+posList <- list.files(path = "GIS/tiles", pattern = "pos", full.names = TRUE)
 
 OpenWoodlands <- function(age, canopyCover, percDecid, pos, dBaseYear) {
 

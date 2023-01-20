@@ -31,7 +31,7 @@ RecentNaturalDist <- function(dType, dYear, age, dBaseYear, lcc, wetland){
 
   #drop wetland
   burnDT[, wetland := wetland[burnDT$pixelID]]
-  burnDT <- burnDT[is.na(wetland),] #burned wetland is still
+  burnDT <- burnDT[is.na(wetland),] #burned wetland is still wetland
 
   burnDT <- burnDT$pixelID
   burnVals <- rep(NA, ncell(dYear))

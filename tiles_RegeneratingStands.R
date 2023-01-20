@@ -1,14 +1,11 @@
 #5)	Identify Regenerating Stands: any stands > 20 years that aren’t conifer 50+ (ie none of the above classes)
-ageList <- list.files(path = "GIS/tiles", pattern = "att_age", full.names = TRUE) %>%
-  grep(., pattern = ".grd", value = TRUE)
-percDecidList <- list.files(path = "GIS/tiles", pattern = "prcD", full.names = TRUE) %>%
-  grep(., pattern = ".grd", value = TRUE)
-posList <- list.files(path = "GIS/tiles", pattern = "pos", full.names = TRUE) %>%
-  grep(., pattern = ".grd", value = TRUE)
-canopyCoverList <- list.files(path = "GIS/tiles", pattern = "att_closure", full.names = TRUE) %>%
-  grep(., pattern = ".grd", value = TRUE)
 
-RegeneratingStands <- function(age, percDecid, pos, canopyCover, dBaseYear) {
+ageList <- list.files(path = "GIS/tiles", pattern = "att_age", full.names = TRUE)
+percDecidList <- list.files(path = "GIS/tiles", pattern = "prcD", full.names = TRUE)
+posList <- list.files(path = "GIS/tiles", pattern = "pos", full.names = TRUE)
+canopyCoverList <- list.files(path = "GIS/tiles", pattern = "att_closure", full.names = TRUE)
+
+RegeneratingStands <- function(age, percDecid, pos, canopyCover, distYear = NULL, dBaseYear) {
 
   tileNum <- stringr::str_extract(age, pattern = "tile[0-9]+")
 
@@ -23,6 +20,14 @@ RegeneratingStands <- function(age, percDecid, pos, canopyCover, dBaseYear) {
   dt <- dt[age > 20]
   rm(age)
   gc()
+
+  #remove the pixels that are 20+ but disturbed <20 y.a.
+  if (!is.null(distYear)) {
+    distYear <- rast(distYear)
+    dt[distYear := distYear[dt$pixelID]]
+    dt <- dt[dBaseYear - distYear > 20,]
+    dt[,distYear := NULL]
+  }
 
   #pixels that are 25% or more coniferous will fall into woodland, mature conifer
   #so keep all deciduous or young coniferous
@@ -42,7 +47,7 @@ RegeneratingStands <- function(age, percDecid, pos, canopyCover, dBaseYear) {
 
   #assume age 50+ with cover below 30 is wetland or woodland, and won't regenerate to forest
   #this excludes deciduous woodlands (along with e.g. grassland)
-  dt <- dt[!c(age > 50 & cc < 30)]
+  dt <- dt[!c(age > 50 & cc < 25)]
 
   #remove the coniferous age 50+
   #this assumes disturbed mature conifer on wetland becomes regenerating stand, not wetland
@@ -74,8 +79,9 @@ if (runAnalysis) {
   percDecidList2020 <- getYear(2020, percDecidList)
   ageList2020 <- getYear(2020, ageList)
   canopyCoverList2020 <- getYear(2020, canopyCoverList)
+  distYearList <- list.files(path = "GIS/tiles", pattern = "YRT2", full.names = TRUE)
   Map(RegeneratingStands, age = ageList2020, percDecid = percDecidList2020,
-      canopyCover = canopyCoverList2020, pos = posList,
+      canopyCover = canopyCoverList2020, pos = posList, distYear = distYearList,
       MoreArgs = list(dBaseYear = 2020))
   #1985
   percDecidList1985 <- getYear(1985, percDecidList)

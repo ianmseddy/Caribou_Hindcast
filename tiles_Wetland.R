@@ -101,11 +101,11 @@ if (runAnalysis) {
 
 
   #1985
-  landPosList1985 <- getAtt(Att = "land_pos", Year = 1985)
+  landPosList1985 <- getAtt(Att = "land_pos", Year = 2020)
   ageList1985 <- getAtt(Att = "age", 1985)
   canopyCoverList1985 <- getAtt("att_closure", 1985)
   percDecidList1985 <- getAtt("prc", 1985)
-  lccList1985 <- getAtt("vegType", 1985)
+  lccList1985 <- getAtt("VegType", 1985)
   youngConList1985 <- getAtt("youngCon", 1985, Path = "outputs/raw")
   MatureConList1985 <- getAtt("matureCon", 1985, Path = "outputs/raw")
   Map(Wetland, age = ageList1985, landPos = landPosList1985, lcc = lccList1985,
