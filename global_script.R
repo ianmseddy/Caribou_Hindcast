@@ -1,11 +1,31 @@
 #master scriopt
-
 source("packageInstallation.R")
 #only need data.table, terra, SpaDES.tools (for a buffered split raster),
 #sf and fasterize (for rasterizing managed forest), magrittr (for piping, for now),
 #and parallel (for parallelizing focal operations)
 
-source("preProcessing_inputData.R")
+#options
+reproducible::checkPath("cache", create = TRUE)
+options("reproducible.cachePath" = "cache")
+setDTthreads(4)
+runAnalysis <- FALSE #if TRUE, will remake the GIS layers
+focalRadius <- 1000 #the radius to use for focal statistics, in metres
+nx = 3 #referring to tile columns
+ny = 3 # referring to tile rows
+
+#silly utility functions
+getYear <- function(pat, List) { return(List[grep(pat, List)])}
+getAtt <- function(Att, Year, Path = "GIS/tiles") {
+  out <- (list.files(path = Path, pattern = Att, full.names = TRUE)) %>%
+    getYear(Year, .)
+  return(out)
+}
+
+#create some folders for output
+checkPath("outputs/raw", create = TRUE)
+checkPath("GIS/tiles", create = TRUE)
+
+# source("preProcessing_inputData.R") #this only needs to be run once - no sense loading these objects
 #this will retrieve CanLaD and CanFIR data from googledrive links,
 
 
@@ -22,36 +42,37 @@ source("preProcessing_inputData.R")
 
 #mature conifer should be mapped first, then wetland, then disturbances, then the rest
 #wetland will overide any disturbance
-#TODO: we should ignore disturbances on wetland during generation of disturbance tiles
+#TODO: we should ignore disturbances on wetland as well as coniferClasses
+#during the generation of disturbance tiles
 
 # In order
-#1)	Identify the two mature conifer classes, age 50-70 and 70+, with canopy closure > 30%
+#1)	Identify the two mature conifer classes, age 50-70 and 70+, with canopy closure > 25%
 source("tiles_MatureConifers.R")
 
 #2)	Identify wetlands
 #per Mathieu, wetland was Alnus spp, open (ie non forest) or flooded. Alnus is an 'unproductive' land cover class
 #therefore, 'mature conifer' that falls under wetland would still be mature conifer.
 #Our wetland will be non-forest wetland, deciduous 20+, and age 50+ conifer with cover <30%
-##TODO: split the landcover class raster
+
+
+#TODO: #logged wetland may be better described as logged - wetland is very broad category - seeking input from Mathieu
 source("tiles_Wetland.R")
 
 #3)	Identify the natural disturbances < 20 y.o
-#TODO: this should also use age to classify under 20 stands that weren't in CanLaD (windthrow)
 source("tiles_NaturalDisturbanceStands.R")
-source("MappingDisturbances_1985.R")
+source("tiles_MappingDisturbances_1985.R")
 #4)	Identify the two age classes of regenerating cutblocks (0-5 and 6-20) -
 
 source("tiles_HarvestedStands.R")
 
-#5)	Identify the Open Lichen Woodlands: conifers age 50+ with canopy closure < 30% that aren't wetlands
+#5)	Identify the Open Lichen Woodlands: conifers age 50+ with canopy closure < 25% that aren't wetlands
 #this assumse that ages and disturbances are consistent
 source("tiles_OpenWoodlands.R")
 
 #6)	Identify Regenerating Stands: any stands that aren't one of the above classes.
 #this class includes majority-conifer pixels that are 21-49 years of age, and deciduous stands age 20+ that aren't wetland.
 #many age 20+ stands are also disturbed < 20 y.a, as the two datasets don't need to agree.
-#TODO: read the disturbances tiles in, and mask the regeneraring stand here. Saves running masking script
-#TODO: also drop the 20+ part.
+#TODO: read the disturbances tiles in, and mask the regenerating stand here. Saves running masking script
 source("tiles_RegeneratingStands.R")
 
 
