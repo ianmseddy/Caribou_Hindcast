@@ -6,7 +6,8 @@ message("Using libPaths:\n", paste(.libPaths(), collapse = "\n"))
 
 
 #while require is down
-if (!require("Require")) install.packages("Require")
+# if (!require("Require")) install.packages("Require")
+library(Require)
 
 Require("checkpoint", upgrade = FALSE)
 Require("remotes", upgrade = FALSE)

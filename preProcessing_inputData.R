@@ -1,18 +1,4 @@
 
-#options
-reproducible::checkPath("cache", create = TRUE)
-options("reproducible.cachePath" = "cache")
-setDTthreads(4)
-runAnalysis <- FALSE #if TRUE, will remake the GIS layers
-focalRadius <- 1000 #the radius to use for focal statistics, in metres
-nx = 3 #referring to tile columns
-ny = 3 # referring to tile rows
-#a silly utility function
-getYear <- function(pat, List) { return(List[grep(pat, List)])}
-
-#create some folders for output
-checkPath("outputs/raw", create = TRUE)
-checkPath("GIS/tiles", create = TRUE)
 
 #alternatively get entire folder at https://drive.google.com/drive/folders/10-abXWuOiXm35Orfko33tXsui2_Jx1Hb?usp=share_link
 
@@ -98,6 +84,7 @@ if (length(missing) > 0) {
 
 
 filenamesNoExt <- basename(processed) %>%
+
   str_remove(., pattern = ".tif") %>%
   str_remove(., pattern = "Eastern_") #correcting a mistake with inherited layer names
 
@@ -105,10 +92,12 @@ notTiled <- lapply(filenamesNoExt, list.files, path = "GIS/tiles") %>%
   lapply(., length) %>%
   unlist(.)
 
+
 #2022 - names are preserved by terra functions, and are then used by splitRaster
 #this is poor design as the values may be replaced by something else entirely
 if (any(notTiled < (nx * ny))) {
   missing <- filenamesNoExt[notTiled < nx*ny]
+
   lapply(missing, FUN = function(toTile){
     asRaster <- raster(file.path("GIS", paste0(toTile, ".tif"))) #must be raster
     Type <- ifelse(length(grep("YR|age", toTile)) == 1, "INT2U", "INT1U") #technically 240 is max age?

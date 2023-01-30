@@ -24,8 +24,8 @@ RegeneratingStands <- function(age, percDecid, pos, canopyCover, distYear = NULL
   #remove the pixels that are 20+ but disturbed <20 y.a.
   if (!is.null(distYear)) {
     distYear <- rast(distYear)
-    dt[distYear := distYear[dt$pixelID]]
-    dt <- dt[dBaseYear - distYear > 20,]
+    dt[, distYear := distYear[dt$pixelID]]
+    dt <- dt[dBaseYear - distYear > 20 | is.na(distYear),]
     dt[,distYear := NULL]
   }
 

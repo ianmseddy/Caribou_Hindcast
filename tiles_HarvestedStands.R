@@ -1,8 +1,7 @@
 
-dTypeList <- list.files(path = "GIS/tiles", pattern = "1985_2020_TYPE", full.names = TRUE) %>%
-  grep(., pattern = ".grd", value = TRUE)
-dYearList <- list.files(path = "GIS/tiles", pattern = "1985_2020_YRT2", full.names = TRUE) %>%
-  grep(., pattern = ".grd", value = TRUE)
+dTypeList <- list.files(path = "GIS/tiles", pattern = "1985_2020_TYPE", full.names = TRUE)
+dYearList <- list.files(path = "GIS/tiles", pattern = "1985_2020_YRT2", full.names = TRUE)
+landPosList2020 <- getAtt(Att = "land_pos", Year = 2020)
 
 ####cut blocks age 0-5 and 6-20 ####
 RecentCutBlocks <- function(dType, dYear, dBaseYear) {
