@@ -72,38 +72,43 @@ Ecozones <- Ecozones[Ecozones$ZONE_NAME %in% c("Taiga Shield", "Boreal Shield", 
 SA <- terra::aggregate(Ecozones)
 
 
-# SA <- terra::project(SA, "EPSG:9001")
-
 processed <- paste0("GIS/Eastern_",basename( unlist(CanLaD_and_SCaNFI)))
 missing <- processed[!file.exists(processed)]
+
 #postProcessTerra is leaving some files in tempdrive - FYI
 if (length(missing) > 0) {
   inFiles <- CanLaD_and_SCaNFI[processed %in% missing]
   bulkPostProcess <- function(infile, SA){
-    dType <- "INT2U" #age and disturbance year were signed, only for the NA?
+
+    #age and disturbance year were signed, only for the NA?
     outName <- file.path("GIS", paste0("Eastern_", basename(infile)))
     infile <- rast(infile)
+    dType <- datatype(infile)
     SA <- project(SA, crs(infile))
-    post <- postProcessTerra(from = infile, cropTo = SA, maskTo = SA, useSAcrs = FALSE,
-                             writeTo = outName, datatype = dType)
+    # post <- postProcessTerra(from = infile, cropTo = SA, maskTo = SA, useSAcrs = FALSE,
+    #                          writeTo = outName, datatype = dType)
+    post <- terra::crop(infile, SA)
+    post <- terra::mask(post, SA, filename = outName, datatype = dType)
+    gc()
   }
 
   lapply(inFiles, bulkPostProcess, SA = SA)
   rm(bulkPostProcess, inFiles, missing)
 }
 
-#even at ~1/3 the original size, 8 billion pixels is too many for logical queries so I will split these into tiles
-#splitRaster is great but isn't configured for terra yet :(
-#in hindsight, more tiles would be better... could parallelize
+
 filenamesNoExt <- basename(processed) %>%
-  stringr::str_remove(., pattern = ".tif")
+  str_remove(., pattern = ".tif") %>%
+  str_remove(., pattern = "Eastern_") #correcting a mistake with inherited layer names
+
 notTiled <- lapply(filenamesNoExt, list.files, path = "GIS/tiles") %>%
   lapply(., length) %>%
   unlist(.)
 
-
-if (any(notTiled < 1)) {
-  missing <- filenamesNoExt[notTiled < 1]
+#2022 - names are preserved by terra functions, and are then used by splitRaster
+#this is poor design as the values may be replaced by something else entirely
+if (any(notTiled < (nx * ny))) {
+  missing <- filenamesNoExt[notTiled < nx*ny]
   lapply(missing, FUN = function(toTile){
     asRaster <- raster(file.path("GIS", paste0(toTile, ".tif"))) #must be raster
     Type <- ifelse(length(grep("YR|age", toTile)) == 1, "INT2U", "INT1U") #technically 240 is max age?
