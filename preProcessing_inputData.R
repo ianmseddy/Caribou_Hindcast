@@ -72,16 +72,16 @@ SA <- terra::aggregate(Ecozones)
 
 
 processed <- paste0("GIS/Eastern_",basename( unlist(CanLaD_and_SCaNFI)))
-missing <- processed[!file.exists(processed)]
+missingFiles <- processed[!file.exists(processed)]
 
 #postProcessTerra is leaving some files in tempdrive - FYI
-if (length(missing) > 0) {
-  inFiles <- CanLaD_and_SCaNFI[processed %in% missing]
+if (length(missingFiles) > 0) {
+  inFiles <- CanLaD_and_SCaNFI[processed %in% missingFiles]
   bulkPostProcess <- function(infile, SA){
 
     #age and disturbance year were signed, only for the NA?
     outName <- file.path("GIS", paste0("Eastern_", basename(infile)))
-    infile <- terra::rast(infile)
+    infile <- rast(infile)
     dType <- "INT2S" #could probably be unsigned but some of the native SCANFI have negative NA?
     SA <- project(SA, crs(infile))
     # post <- postProcessTerra(from = infile, cropTo = SA, maskTo = SA, useSAcrs = FALSE,
@@ -92,7 +92,7 @@ if (length(missing) > 0) {
   }
 
   lapply(inFiles, bulkPostProcess, SA = SA)
-  rm(bulkPostProcess, inFiles, missing)
+  rm(bulkPostProcess, inFiles, missingFiles)
 }
 
 
@@ -105,14 +105,19 @@ notTiled <- lapply(filenamesNoExt, list.files, path = "GIS/tiles") %>%
   lapply(., length) %>%
   unlist(.)
 
-#2022 - names are preserved by terra functions, and are then used by splitRaster
-#this is poor design as the values may be replaced by something else entirely
+
 if (any(notTiled < (nx * ny))) {
-  missing <- filenamesNoExt[notTiled < nx*ny]
-  lapply(missing, FUN = function(toTile){
+  missingTiles <- processed[notTiled < nx*ny]
+  clearTemp <- ifelse(missingTiles > 5, TRUE, FALSE) #this is likely going to fill temp drive with 100 GB
+  lapply(missingTiles, FUN = function(toTile, tempDr = clearTemp){
     asRaster <- raster(toTile) #must be raster
+    #cc, percD, landcover, pos, all under 255
     SpaDES.tools::splitRaster(asRaster, nx = nx, ny = ny, buffer = c(35, 35),
                               rType = "INT2S", path = "GIS/tiles", fExt = ".tif")
+    if (tempDr) {
+      tempFiles <- list.files(tempdir(), full.names = TRUE, pattern = ".grd")
+      lapply(tempFiles, unlink)
+    }
   })
 }
 
