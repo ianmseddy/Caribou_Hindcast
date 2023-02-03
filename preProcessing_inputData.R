@@ -1,4 +1,17 @@
+#options
+reproducible::checkPath("cache", create = TRUE)
+options("reproducible.cachePath" = "cache")
+setDTthreads(4)
+runAnalysis <- TRUE #if TRUE, will remake the GIS layers
+focalRadius <- 1000 #the radius to use for focal statistics, in metres
+nx = 4 #referring to tile columns
+ny = 2# referring to tile rows
+#a silly utility function
+getYear <- function(pat, List) { return(List[grep(pat, List)])}
 
+#create some folders for output
+checkPath("outputs/raw", create = TRUE)
+checkPath("GIS/tiles", create = TRUE)
 
 #alternatively get entire folder at https://drive.google.com/drive/folders/10-abXWuOiXm35Orfko33tXsui2_Jx1Hb?usp=share_link
 
@@ -54,7 +67,7 @@ Ecozones <- prepInputs(url = "https://sis.agr.gc.ca/cansis/nsdb/ecostrat/zone/ec
                        destinationPath = "GIS",
                        fun = "terra::vect",
                        studyArea = QuebecOntario)
-Ecozones <- Ecozones[Ecozones$ZONE_NAME %in% c("Taiga Shield", "Boreal Shield", "MixedWood Plain", "Hudson Plains")]
+Ecozones <- Ecozones[Ecozones$ZONE_NAME %in% c("Taiga Shield", "Boreal Shield", "MixedWood Plain", "Hudson Plain")]
 SA <- terra::aggregate(Ecozones)
 
 
@@ -68,8 +81,8 @@ if (length(missing) > 0) {
 
     #age and disturbance year were signed, only for the NA?
     outName <- file.path("GIS", paste0("Eastern_", basename(infile)))
-    infile <- rast(infile)
-    dType <- datatype(infile)
+    infile <- terra::rast(infile)
+    dType <- "INT2S" #could probably be unsigned but some of the native SCANFI have negative NA?
     SA <- project(SA, crs(infile))
     # post <- postProcessTerra(from = infile, cropTo = SA, maskTo = SA, useSAcrs = FALSE,
     #                          writeTo = outName, datatype = dType)
@@ -92,18 +105,14 @@ notTiled <- lapply(filenamesNoExt, list.files, path = "GIS/tiles") %>%
   lapply(., length) %>%
   unlist(.)
 
-
 #2022 - names are preserved by terra functions, and are then used by splitRaster
 #this is poor design as the values may be replaced by something else entirely
 if (any(notTiled < (nx * ny))) {
   missing <- filenamesNoExt[notTiled < nx*ny]
-
   lapply(missing, FUN = function(toTile){
-    asRaster <- raster(file.path("GIS", paste0(toTile, ".tif"))) #must be raster
-    Type <- ifelse(length(grep("YR|age", toTile)) == 1, "INT2U", "INT1U") #technically 240 is max age?
-    #cc, percD, landcover, pos, all under 255
+    asRaster <- raster(toTile) #must be raster
     SpaDES.tools::splitRaster(asRaster, nx = nx, ny = ny, buffer = c(35, 35),
-                              rType = Type, path = "GIS/tiles", fExt = ".tif")
+                              rType = "INT2S", path = "GIS/tiles", fExt = ".tif")
   })
 }
 
@@ -126,7 +135,9 @@ rm(files, cellNum)
 
 #as we need a template raster, this section is processsed after the CanLAD data
 #template raster will be the processed age data.
-ageRTM <- raster("GIS/Eastern_SCANFI_att_age_S_2020_v0.tif")
+ageRTM <- rast("GIS/Eastern_SCANFI_att_age_S_2020_v0.tif")
+SA <- terra::project(SA, ageRTM)
+
 #get map of forest management (2020) hopefully this isn't outdated... make sure to check
 #values are 11 - long-term tenure, 12 - short-term tenure, 13 other, 20 Protected aras,
 #31 Federal reserve, 32 Indian Reserve, 33 Restricted, 40 Treaty and Settlement, 50 Private forests
@@ -137,9 +148,8 @@ ManagedForest <- prepInputs(url = paste0("https://drive.google.com/file/d",
                             fun = "terra::rast",
                             destinationPath = "GIS",
                             targetFile = "Canada_MFv2017.tif")
-ManagedForest <- postProcessTerra(from = ManagedForest, to = ageRTM,
-                                  writeTo = "GIS/Eastern_ManagedForest.tif",
-                                  method = "near", datatype = "INT1U")
+ManagedForest <- terra::project(ManagedForest, ageRTM)
+ManagedForest <- terra::mask(ManagedForest, SA, filename = "GIS/Eastern_ManagedForest.tif", overwrite = TRUE)
 gc()
 #read it in again as a raster - required for SpaDES.tools::splitRaster
 ManagedForest <- raster("GIS/Eastern_ManagedForest.tif")
@@ -153,12 +163,18 @@ rm(ManagedForest)
 
 NFDB <- Cache(prepInputs,
               url = "https://cwfis.cfs.nrcan.gc.ca/downloads/nfdb/fire_poly/current_version/NFDB_poly.zip",
-              destinationPath = "GIS", fun = "st_read",
+              destinationPath = "GIS", fun = "terra::vect",
               userTags = c("NFDB"))
+
 NFDB <- NFDB[NFDB$YEAR > 1964 & NFDB$YEAR < 1986,]
-NFDB <- sf::st_transform(NFDB, crs = st_crs(ageRTM))
+NFDB <- terra::project(NFDB, SA)
+NFDB <- terra::crop(NFDB, SA)
+
+NFDB <- sf::st_as_sf(NFDB)
+NFDB <- st_cast(NFDB, to = "MULTIPOLYGON")
 
 #fasterize does not have a filename argument, so this raster will temporarily exist in RAM.
+ageRTM <- raster("GIS/Eastern_SCANFI_att_age_S_2020_v0.tif")
 NFDBras <- fasterize(NFDB, raster = ageRTM, field = "YEAR")
 
 writeRaster(NFDBras, "GIS/NFDB_raster_1965_1985.tif", overwrite = TRUE)
@@ -171,6 +187,7 @@ if (length(fireTiles) < 1) {
   names(NFDBras) <- "Eastern_NFDB"
   SpaDES.tools::splitRaster(NFDBras, nx = nx, ny = ny, buffer = c(35, 35),
                             rType = "INT2U", path = "GIS/tiles", fExt = ".tif")
+  rm(fireTiles, NFDB, NFDBras)
 
 }
 

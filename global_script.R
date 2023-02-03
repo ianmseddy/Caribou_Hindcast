@@ -4,14 +4,6 @@ source("packageInstallation.R")
 #sf and fasterize (for rasterizing managed forest), magrittr (for piping, for now),
 #and parallel (for parallelizing focal operations)
 
-#options
-reproducible::checkPath("cache", create = TRUE)
-options("reproducible.cachePath" = "cache")
-setDTthreads(4)
-runAnalysis <- FALSE #if TRUE, will remake the GIS layers
-focalRadius <- 1000 #the radius to use for focal statistics, in metres
-nx = 3 #referring to tile columns
-ny = 3 # referring to tile rows
 
 #silly utility functions
 getYear <- function(pat, List) { return(List[grep(pat, List)])}
@@ -60,7 +52,10 @@ source("tiles_Wetland.R")
 
 #3)	Identify the natural disturbances < 20 y.o
 source("tiles_NaturalDisturbanceStands.R")
-source("tiles_MappingDisturbances_1985.R")
+
+#note that we are inevitably overestimating harvest and underestimating fire
+#as the NFDB only dates to 1973
+source("MappingDisturbances_1985.R")
 #4)	Identify the two age classes of regenerating cutblocks (0-5 and 6-20) -
 
 source("tiles_HarvestedStands.R")

@@ -9,10 +9,11 @@ MatureConifer <- function(age, canopyCover, percDecid, distYear = NULL, dBaseYea
 
   percDecid <- rast(percDecid)
   #sanity check
-  canopyCover1 <- rast(canopyCover)
-  age1 <- rast(age)
-  compareGeom(percDecid, canopyCover1, age1)
-  rm(canopyCover1, age1)
+
+  canopyCover <- rast(canopyCover)
+  age <- rast(age)
+  compareGeom(percDecid, canopyCover, age)
+
 
   dt <- data.table(pixelID = 1:ncell(percDecid))
   dt$percDecid <- percDecid[]
@@ -23,7 +24,6 @@ MatureConifer <- function(age, canopyCover, percDecid, distYear = NULL, dBaseYea
   rm(percDecid)
   gc()
   #keep only pixels with 30% or more cover
-  canopyCover <- rast(canopyCover)
   dt[, cover := canopyCover[][dt$pixelID]]
   #keeping index outside of values (i.e. instead of canopyCover[<index>]) is significantly faster!
   dt <- dt[cover >= 25,]
@@ -37,12 +37,13 @@ MatureConifer <- function(age, canopyCover, percDecid, distYear = NULL, dBaseYea
     distYear <- rast(distYear)
     dt[, distYear := distYear[dt$pixelID]]
     dt <- dt[dBaseYear - distYear > 20,]
-    dt[,distYear := NULL]
+    dt[, distYear := NULL]
   }
 
+
   #write young conifer
-  age <- rast(age)
-  dt[, age := age[][dt$pixelID]]
+
+  dt[, age := age[dt$pixelID]]
   youngConifer <- dt[age > 49 & age < 70]$pixelID
   oldConifer <- dt[age >= 70]$pixelID
   rm(dt)
