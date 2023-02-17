@@ -46,7 +46,7 @@ RecentNaturalDist <- function(dType, dYear, age, dBaseYear, lcc, wetland){
   rm(outRas)
   gc()
 }
-#
+
 if (runAnalysis) {
   lccList <- getAtt(Att = "VegType", 2020)
   dTypeList <- getAtt(Att = "1985_2020_TYPE", 2020)

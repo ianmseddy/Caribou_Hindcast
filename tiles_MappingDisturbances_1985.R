@@ -10,7 +10,7 @@
 
 #in hindsight, didn't need to restrict fire year to 65-85 in the rasterized version
 
-InferDisturbances <- function(NFDB, MngFor, age, lcc, dBaseYear = 1985, outDir) {
+InferDisturbances <- function(NFDB, MngFor, age, lcc, wetland, dBaseYear = 1985, outDir) {
   tileNum <- stringr::str_extract(age, pattern = "tile[0-9]+")
   #Non-forest pixels are 0 age, therefore I need Landcover 1985
   age <- rast(age)
@@ -18,9 +18,10 @@ InferDisturbances <- function(NFDB, MngFor, age, lcc, dBaseYear = 1985, outDir) 
   NFDB1 <- rast(NFDB)
   MngFor1 <- rast(MngFor)
   lcc1 <- rast(lcc)
+  wetland1 <- rast(wetland)
   compareGeom(NFDB1, age, lcc1)
-  compareGeom(lcc1, MngFor1)
-  rm(NFDB1, MngFor1, lcc1)
+  compareGeom(lcc1, MngFor1, wetland1)
+  rm(NFDB1, MngFor1, lcc1, wetland1)
 
   # focalMatrix <- terra::focalMat(x = age, d = focalWindow, type = "circle")
 
@@ -29,12 +30,20 @@ InferDisturbances <- function(NFDB, MngFor, age, lcc, dBaseYear = 1985, outDir) 
   setnames(ageDT, c("age", "pixelID"))
   ageDT <- ageDT[age < 21]
 
+  gc()
   #drop non-forest as these are age zero
   lcc <- rast(lcc)
   ageDT[, lcc := lcc[][ageDT$pixelID]] #get landcover
   ageDT <- ageDT[lcc < 8 & lcc > 4,] #forest
   ageDT[, lcc := NULL]
   rm(lcc)
+  gc()
+
+  #drop pixels on wetland as they cannot be disturbed
+  wetland <- rast(wetland)
+  ageDT[, wetland := values(wetland, data.frame = FALSE)[ageDT$pixelID]]
+  ageDT <- ageDT[is.na(wetland)] #wetland is either 1 or NA
+  ageDT[, wetland := NULL]
   gc()
 
   #get managed forest value and fire
@@ -78,9 +87,6 @@ InferDisturbances <- function(NFDB, MngFor, age, lcc, dBaseYear = 1985, outDir) 
   oldHarvest <- setValues(NFDB, harvestRepVals)
   outFile <- file.path(outDir, paste0("harvest_6to20_", dBaseYear,"_", tileNum, ".tif"))
   writeRaster(oldHarvest, filename = outFile, datatype = "INT1U", overwrite = TRUE)
-  # outFile <- file.path("outputs", paste0("harvest_6to20_", dBaseYear,  "_focal", focalWindow, "_", tileNum, ".tif"))
-  # oldFocal <- terra::focal(oldHarvest, w = focalMatrix, fun = sum, na.rm = TRUE, expand = FALSE,
-  #                            filename = outFile, overwrite = TRUE)
   rm(oldHarvest, harvestRepVals, NFDB)
   gc()
 
@@ -92,12 +98,13 @@ if (runAnalysis) {
   outputDir = "outputs/raw"
 
   NFDBlist <- list.files(path = "GIS/tiles", pattern = "NFDB", full.names = TRUE)
-  MngForList <- list.files(path = "GIS/tiles", pattern = "MFv", full.names = TRUE)
-  ageList <- list.files(path = "GIS/tiles", pattern = "age_S_1985", full.names = TRUE)
-  lccList <- list.files(path = "GIS/tiles", pattern = "VegTypeClass_S_1985", full.names = TRUE)
+  MngForList <- list.files(path = "GIS/tiles", pattern = "ManagedForest", full.names = TRUE)
+  ageList <-getAtt("age", 1985)
+  lccList <- getAtt("VegTypeClass", 1985)
+  wetlandList <- getAtt("wetland", 1985, "outputs/raw")
 
   Map(InferDisturbances, NFDB = NFDBlist, MngFor = MngForList,
-      age = ageList, lcc = lccList,
+      age = ageList, lcc = lccList, wetland = wetlandList,
       MoreArgs = list(dBaseYear = 1985,
                       outDir = outputDir))
 }
