@@ -1,13 +1,3 @@
-#options
-reproducible::checkPath("cache", create = TRUE)
-options("reproducible.cachePath" = "cache")
-setDTthreads(4)
-runAnalysis <- TRUE #if TRUE, will remake the GIS layers
-focalRadius <- 1000 #the radius to use for focal statistics, in metres
-nx = 4 #referring to tile columns
-ny = 2# referring to tile rows
-#a silly utility function
-getYear <- function(pat, List) { return(List[grep(pat, List)])}
 
 #create some folders for output
 checkPath("outputs/raw", create = TRUE)
@@ -180,6 +170,7 @@ NFDB <- st_cast(NFDB, to = "MULTIPOLYGON")
 
 #fasterize does not have a filename argument, so this raster will temporarily exist in RAM.
 ageRTM <- raster("GIS/Eastern_SCANFI_att_age_S_2020_v0.tif")
+NFDB <- st_transform(NFDB, crs(ageRTM))
 NFDBras <- fasterize(NFDB, raster = ageRTM, field = "YEAR")
 
 writeRaster(NFDBras, "GIS/NFDB_raster_1965_1985.tif", overwrite = TRUE)

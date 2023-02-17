@@ -3,19 +3,21 @@ library(parallel)
 #the radius argument is 1000 - the area is 3.14 km2
 
 if (Sys.info()["sysname"] == "Linux") {
-  inputDir <- "outputs/maskedHabitat"
+  inputDir <- "outputs/raw"
   outputDir <- "outputs/focalHabitat"
   num_cores <- 3
   cl <- makeCluster(num_cores)
 } else {
   inputDir <- "D:/Ian/YanBoulanger/maskedHabitat"
   outputDir <- "D:/Ian/YanBoulanger/focalHabitat"
-  num_cores <- 3
+  num_cores <- 5
   cl <- makeCluster(num_cores)
 }
 
 focalFiles <- list.files(inputDir, pattern = ".tif", full.names = TRUE)
 focalMatrix <- terra::focalMat(x = rast(focalFiles[1]), d = focalRadius, type = "circle")
+
+#run on 1985 first
 
 focalStats <- function(rastFile, weights = focalMatrix, outDir) {
   baseName <- basename(rastFile)
@@ -40,11 +42,6 @@ clusterEvalQ(cl, {
 parLapply(cl, focalFiles, focalStats,
           outDir = outputDir)
 stopCluster(cl)
-
-#wetlands were not in /masked because they were the primary masking layer
-wetlands <- list.files("outputs/raw/", pattern = "wetland", full.names = TRUE)
-parLapply(cl, wetlands, focalStats, outDir = outputDir)
-
 
 #check all is kosher
 tiles <- paste0("tile", 1:6)

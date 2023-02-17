@@ -5,20 +5,17 @@ source("packageInstallation.R")
 #and parallel (for parallelizing focal operations)
 
 
-#silly utility functions
-getYear <- function(pat, List) { return(List[grep(pat, List)])}
-getAtt <- function(Att, Year, Path = "GIS/tiles") {
-  out <- (list.files(path = Path, pattern = Att, full.names = TRUE)) %>%
-    getYear(Year, .)
-  return(out)
-}
+#determines number of tiles, buffering distance, etc
+source("options_and_globals.R")
 
 #create some folders for output
 checkPath("outputs/raw", create = TRUE)
 checkPath("GIS/tiles", create = TRUE)
 
 # source("preProcessing_inputData.R") #this only needs to be run once - no sense loading these objects
-#this will retrieve CanLaD and CanFIR data from googledrive links,
+#this will retrieve CanLaD and CanFIR data from googledrive links
+#this is better run with supervision as it may fill temp drives during reprojecting, tiling, etc
+
 
 
 #Leblond formula
@@ -34,8 +31,8 @@ checkPath("GIS/tiles", create = TRUE)
 
 #mature conifer should be mapped first, then wetland, then disturbances, then the rest
 #wetland will overide any disturbance
-#TODO: we should ignore disturbances on wetland as well as coniferClasses
 #during the generation of disturbance tiles
+
 
 # In order
 #1)	Identify the two mature conifer classes, age 50-70 and 70+, with canopy closure > 25%
@@ -48,6 +45,7 @@ source("tiles_MatureConifers.R")
 
 
 #TODO: #logged wetland may be better described as logged - wetland is very broad category - seeking input from Mathieu
+#it was decided to ignore these
 source("tiles_Wetland.R")
 
 #3)	Identify the natural disturbances < 20 y.o
@@ -55,9 +53,10 @@ source("tiles_NaturalDisturbanceStands.R")
 
 #note that we are inevitably overestimating harvest and underestimating fire
 #as the NFDB only dates to 1973
-source("MappingDisturbances_1985.R")
-#4)	Identify the two age classes of regenerating cutblocks (0-5 and 6-20) -
+#TODO: ignore wetland pixels in 1985 during this script, as in tiles_NaturalDisturbances
+source("tiles_MappingDisturbances_1985.R")
 
+#4)	Identify the two age classes of regenerating cutblocks (0-5 and 6-20) -
 source("tiles_HarvestedStands.R")
 
 #5)	Identify the Open Lichen Woodlands: conifers age 50+ with canopy closure < 25% that aren't wetlands
@@ -78,19 +77,19 @@ covariates2020 <- c("matureConifer", "youngConifer", "openWoodland", "regenerati
 
 #setValues as an intermediate step causes the raster to be in memory, blowing up RAM use to > 100 GB
 #in hindsight I should have multiplied the focal values before writing them to disk
-lapply(covariates2020, FUN = function(x){
-  output <- list.files(pattern = x, path = "outputs",full.names = TRUE) %>%
-    grep(., pattern = "2020", value = TRUE) %>%
-    lapply(., FUN = function(x) {raster(x) * 1000}) %>%
-    #the above line created 400 GB of rasters in my tempdrive.... lol
-    mergeRaster(.)
-  gc()
-  raster::writeRaster(x = output, filename = paste0("outputs/final/", x, 2020, "_focal.tif"),
-                      datatype = "INT2U", overwrite = TRUE)
-  #we can delete these newTiles later -
-  rm(output)
-  gc()
-})
+# lapply(covariates2020, FUN = function(x){
+#   output <- list.files(pattern = x, path = "outputs",full.names = TRUE) %>%
+#     grep(., pattern = "2020", value = TRUE) %>%
+#     lapply(., FUN = function(x) {raster(x) * 1000}) %>%
+#     #the above line created 400 GB of rasters in my tempdrive.... lol
+#     mergeRaster(.)
+#   gc()
+#   raster::writeRaster(x = output, filename = paste0("outputs/final/", x, 2020, "_focal.tif"),
+#                       datatype = "INT2U", overwrite = TRUE)
+#   #we can delete these newTiles later -
+#   rm(output)
+#   gc()
+# })
 
 
 

@@ -49,8 +49,6 @@ RecentCutBlocks <- function(dType, dYear, dBaseYear) {
 
 #this is where we should talk with Yan -
 if (runAnalysis) {
-  # Map(RecentCutBlocks, dType = dTypeList, dYear = dYearList,
-  #     MoreArgs = list(dBaseYear = 2005, focalWindow = focalRadius))
   Map(RecentCutBlocks, dType = dTypeList, dYear = dYearList,
       MoreArgs = list(dBaseYear = 2020))
 }
