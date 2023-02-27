@@ -5,12 +5,12 @@ library(parallel)
 if (Sys.info()["sysname"] == "Linux") {
   inputDir <- "outputs/raw"
   outputDir <- "outputs/focalHabitat"
-  num_cores <- 3
+  num_cores <- 5
   cl <- makeCluster(num_cores)
 } else {
   inputDir <- "D:/Ian/YanBoulanger/maskedHabitat"
   outputDir <- "D:/Ian/YanBoulanger/focalHabitat"
-  num_cores <- 5
+  num_cores <- 6
   cl <- makeCluster(num_cores)
 }
 
