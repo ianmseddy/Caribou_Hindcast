@@ -36,7 +36,7 @@ MatureConifer <- function(age, canopyCover, percDecid, distYear = NULL, dBaseYea
   if (!is.null(distYear)) {
     distYear <- rast(distYear)
     dt[, distYear := distYear[dt$pixelID]]
-    dt <- dt[dBaseYear - distYear > 20,]
+    dt <- dt[dBaseYear - distYear > 20 | is.na(distYear),]
     dt[, distYear := NULL]
   }
 
