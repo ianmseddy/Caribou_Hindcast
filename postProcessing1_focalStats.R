@@ -47,12 +47,11 @@ parLapply(cl, focalFiles, focalStats,
 stopCluster(cl)
 
 #check all is kosher
-tiles <- paste0("tile", 1:8)
-lengths <- unlist(lapply(tiles, list.files, path = outputDir, full.names = TRUE) %>%
+tiles <- paste0("tile", c(ny * nx))
+nComplete <- unlist(lapply(tiles, list.files, path = outputDir, full.names = TRUE) %>%
   lapply(., length))
-if (!all(lengths == 16)) {
+if (!all(nComplete == length(tiles))) {
   stop("aahhh")
 }
-#16 each tile, due to 8 habitats * 2 years. Done!
 
 
