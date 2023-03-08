@@ -15,6 +15,9 @@ if (Sys.info()["sysname"] == "Linux") {
 }
 
 focalFiles <- list.files(inputDir, pattern = ".tif", full.names = TRUE)
+focalFiles <- focalFiles[c(grep("Conifer2020", focalFiles),
+                           grep("harvest_0to5_2020", focalFiles),
+                           grep("harvest_6to20_2020", focalFiles))]
 focalMatrix <- terra::focalMat(x = rast(focalFiles[1]), d = focalRadius, type = "circle")
 
 #run on 1985 first
@@ -44,10 +47,9 @@ parLapply(cl, focalFiles, focalStats,
 stopCluster(cl)
 
 #check all is kosher
-tiles <- paste0("tile", 1:6)
-lengths <- unlist(lapply(tiles, list.files, path = outputDir, full.names = TRUE) %>%
+tiles <- paste0("tile", c(ny * nx))
+nComplete <- unlist(lapply(tiles, list.files, path = outputDir, full.names = TRUE) %>%
   lapply(., length))
-if (!all(lengths == 16)) {
+if (!all(nComplete == length(tiles))) {
   stop("aahhh")
 }
-#16 each tile, due to 8 habitats * 2 years. Done!

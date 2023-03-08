@@ -1,9 +1,9 @@
-#master scriopt
+#master script -  packageInstallation and options_and_globals must be run everytime
+#the former for loading, the latter for variables like number of tiles
 source("packageInstallation.R")
 #only need data.table, terra, SpaDES.tools (for a buffered split raster),
 #sf and fasterize (for rasterizing managed forest), magrittr (for piping, for now),
 #and parallel (for parallelizing focal operations)
-
 
 #determines number of tiles, buffering distance, etc
 source("options_and_globals.R")

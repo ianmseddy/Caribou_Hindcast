@@ -2,22 +2,26 @@
 # convert all focal habitat rasters into single weighted habitat layer for each year
 # calculate the difference
 # generate a habitat class layer by assigning 1:8 to binary habitats
-# this cannot be run in parallel (well without a better machine - RAM use hits 60 GB one tile)
-
 if (Sys.info()["sysname"] == "Linux") {
-  inputDir1 <- "outputs/focalHabitat"
-  outputDir1 <- "outputs/weightedHabitat"
+  focalHabitatDir <- "outputs/focalHabitat"
+  focalHabitatDir1000 <- "outputs/focalHabitat1000" #this should have been done in focal - if I ever rerun...
+  weightedDir <- "outputs/weightedHabitat"
+  compositeDir <- "outputs/compositeHabitat"
+
 } else {
-  inputDir1 <- "D:/Ian/YanBoulanger/maskedHabitat"
-  outputDir1 <- "D:/Ian/YanBoulanger/focalHabitat"
+  focalHabitatDir <- "D:/Ian/YanBoulanger/maskedHabitat"
+  focalHabitatDir1000 <- "outputs/focalHabitat1000" #this should have been done in focal - if I ever rerun...
+  weightedDir <- "D:/Ian/YanBoulanger/focalHabitat"
+  compositeDir <- "D:/Ian/YanBoulanger/compositeHabitat"
 }
 
-checkPath(outputDir1, create = TRUE)
+checkPath(weightedDir, create = TRUE)
 tiles <- paste0("tile", 1:8)
 
 
 checkPath("outputs/focalHabitat1000", create = TRUE)
-habitatRasters <- lapply(tiles, list.files, path = inputDir1, full.names = TRUE)
+
+habitatRasters <- lapply(tiles, list.files, path = focalHabitatDir, full.names = TRUE)
 multi <- function(X, by){X * by}
 #multiply focal files by 1000 - this should have been done earlier...
 
@@ -25,8 +29,8 @@ temp <- Reduce(c, habitatRasters)
 
 lapply(temp, FUN = function(x){
   oldName <- basename(x)
-  newRas <- terra::app(rast(x), fun = multi, by = 1000,
-                       filename = file.path("outputs/focalHabitat1000", oldName),
+  newRas <- terra::app(rast(x), fun = multi, by = 1000, overwrite = TRUE,
+                       filename = file.path(focalHabitatDir1000, oldName),
                        wopt = list(datatype = "INT2U"))
   gc()
 })
@@ -95,8 +99,8 @@ makeWeightedHabitat <- function(tileList, year, outputPath) {
 
 habitatRasters <- lapply(tiles, list.files, path = "outputs/focalHabitat1000", full.names = TRUE)
 #this could be stored as INT1U - as the theoretical max habitat is 240 (1000 * 0.24 weight)
-lapply(habitatRasters[5:8], FUN = makeWeightedHabitat, year = 2020, outputPath = outputDir1)
-lapply(habitatRasters, FUN = makeWeightedHabitat, year = 1985, outputPath = outputDir1)
+lapply(habitatRasters, FUN = makeWeightedHabitat, year = 2020, outputPath = weightedDir)
+lapply(habitatRasters, FUN = makeWeightedHabitat, year = 1985, outputPath = weightedDir)
 
 
 
@@ -159,11 +163,30 @@ makeCompositeHabitat <- function(tileList, year, outputPath) {
 
 }
 
-habitatClasses <- lapply(tiles, list.files, path = inputDir2, full.names = TRUE)
+habitatClasses <- lapply(tiles, list.files, path = "outputs/raw/", full.names = TRUE)
 #some memory leakage happens with this function. Not sure why. Don't recommend running all at once
-lapply(habitatClasses, makeCompositeHabitat, year = 2020, outputPath = outputDir2)
-lapply(habitatClasses, makeCompositeHabitat, year = 1985, outputPath = outputDir2)
+lapply(habitatClasses, makeCompositeHabitat, year = 2020, outputPath = compositeDir)
+lapply(habitatClasses, makeCompositeHabitat, year = 1985, outputPath = compositeDir)
 gc()
 
+#upload files
+if (FALSE) {
+  toZip <- list.files("outputs/weightedHabitat", full.names = TRUE)
+  utils::zip(zipfile = "outputs/weightedHabitat.zip",
+             files = toZip,
+             flags = "-j")
+  thePath <- as_dribble("PFC/Yan/Caribou Hindcast Results V2/weighted habitat")
+  drive_put("outputs/weightedHabitat.zip", path = thePath)
+}
 
-#upload
+if (FALSE){
+# #the composite tiles are 8 GB each, so upload tiles separately)
+  toZip <- list.files("outputs/focalHabitat1000", full.names = TRUE)
+  utils::zip(zipfile = "outputs/focalHabitat1000.zip",
+           files = toZip,
+           flags = "-j")
+  thePath <- googledrive::as_dribble("PFC/Yan/Caribou Hindcast Results V2/focal habitat layers X 1000")
+  drive_put("outputs/focalHabitat1000.zip", path = thePath)
+}
+
+

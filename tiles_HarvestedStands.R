@@ -1,14 +1,12 @@
 
-dTypeList <- list.files(path = "GIS/tiles", pattern = "1985_2020_TYPE", full.names = TRUE)
-dYearList <- list.files(path = "GIS/tiles", pattern = "1985_2020_YRT2", full.names = TRUE)
-landPosList2020 <- getAtt(Att = "land_pos", Year = 2020)
-
 ####cut blocks age 0-5 and 6-20 ####
-RecentCutBlocks <- function(dType, dYear, dBaseYear) {
+RecentCutBlocks <- function(dType, dYear, wetland, dBaseYear) {
   tileNum <- stringr::str_extract(dType, pattern = "tile[0-9]+")
   dType = rast(dType)
   dYear = rast(dYear)
-  compareGeom(dType, dYear)
+  wetland <- rast(wetland)
+
+  compareGeom(dType, dYear, wetland)
 
   harvestDT = data.table(1:ncell(dType),
                          values(dType, mat = FALSE))
@@ -17,6 +15,10 @@ RecentCutBlocks <- function(dType, dYear, dBaseYear) {
   harvestDT <- harvestDT[harvest == 2]
   gc()
   harvestDT[, harvest := values(dYear, mat = FALSE)[harvestDT$pixelID]]
+
+  #drop wetland
+  harvestDT[, wetland := wetland[harvestDT$pixelID]]
+  harvestDT <- harvestDT[is.na(wetland),] #harvested wetland is still wetland
 
   harvestDT[, isYoung := dBaseYear - harvest <= 5 & dBaseYear >= harvest]
   youngHarvest <- rast(dYear)
@@ -49,7 +51,12 @@ RecentCutBlocks <- function(dType, dYear, dBaseYear) {
 
 #this is where we should talk with Yan -
 if (runAnalysis) {
-  Map(RecentCutBlocks, dType = dTypeList, dYear = dYearList,
+
+  dTypeList <- list.files(path = "GIS/tiles", pattern = "1985_2020_TYPE", full.names = TRUE)
+  dYearList <- list.files(path = "GIS/tiles", pattern = "1985_2020_YRT2", full.names = TRUE)
+  wetlandList <- getAtt("wetland", 2020, "outputs/raw")
+
+  Map(RecentCutBlocks, dType = dTypeList, dYear = dYearList, wetland = wetlandList,
       MoreArgs = list(dBaseYear = 2020))
 }
 
