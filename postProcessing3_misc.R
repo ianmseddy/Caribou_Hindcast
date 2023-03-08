@@ -18,7 +18,8 @@ if (FALSE){
   utils::zip(zipfile = "outputs/changeInWeightedHabitat.zip",
              files = toZip,
              flags = "-j")
-  thePath <- googledrive::as_dribble("PFC/Yan/Caribou Hindcast Results V2/change in weighted habtitat")
+  theFolder <- googledrive::drive_mkdir("PFC/Yan/Caribou Hindcast Results V2/change in weighted habtitat")
+  thePath <- googledrive::as_dribble(theFolder)
   drive_put("outputs/changeInWeightedHabitat.zip", path = thePath)
 }
 
@@ -62,10 +63,11 @@ lapply(paste0("tile",1:c(nx*ny)), function(tile){
 if (FALSE){
   # #the composite tiles are 8 GB each, so upload tiles separately)
   toZip <- list.files("outputs/masks", full.names = TRUE)
-  utils::zip(zipfile = "outputs/focalHabitat1000.zip",
+  utils::zip(zipfile = "outputs/nonHabitat_Masks.zip",
              files = toZip,
              flags = "-j")
-  thePath <- googledrive::as_dribble("PFC/Yan/Caribou Hindcast Results V2/focal habitat layers X 1000")
-  drive_put("outputs/focalHabitat1000.zip", path = thePath)
+  thePath <- googledrive::drive_mkdir("PFC/Yan/Caribou Hindcast Results V2/nonHabitat masks")
+  thePath <- as_dribble(thePath)
+  drive_put("outputs/nonHabitat_Masks.zip", path = thePath)
 }
 

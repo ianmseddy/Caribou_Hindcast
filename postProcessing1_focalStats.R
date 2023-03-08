@@ -53,5 +53,3 @@ nComplete <- unlist(lapply(tiles, list.files, path = outputDir, full.names = TRU
 if (!all(nComplete == length(tiles))) {
   stop("aahhh")
 }
-
-
