@@ -12,18 +12,9 @@ lapply(paste0("tile", 1:c(nx*ny)), function(tile){
               wopt = list(datatype = "INT2S"))
 })
 
-if (FALSE){
-  # #the composite tiles are 8 GB each, so upload tiles separately)
-  toZip <- list.files("outputs/weightedDifference", full.names = TRUE)
-  utils::zip(zipfile = "outputs/changeInWeightedHabitat.zip",
-             files = toZip,
-             flags = "-j")
-  theFolder <- googledrive::drive_mkdir("PFC/Yan/Caribou Hindcast Results V2/change in weighted habtitat")
-  thePath <- googledrive::as_dribble(theFolder)
-  drive_put("outputs/changeInWeightedHabitat.zip", path = thePath)
-}
 
-
+####masking out non habitat####
+#some areas are not habitat but are within 1 km of habitat. This information is lost with this approach..
 
 #make a not forest or wetland mask
 lapply(paste0("tile",1:c(nx*ny)), function(tile){
@@ -44,7 +35,7 @@ lapply(paste0("tile",1:c(nx*ny)), function(tile){
   mask1 <- classify(lcc2020, lccRecl, right = NA)
   mask2 <- classify(lcc1985, lccRecl, right = NA)
   mask3 <- classify(landPos, landPosRecl, right = NA)
-  #if pixels do not sum to 1, they are either forested in 1985 or 2020 (or both), or wetland
+
   out <- sum(mask1, mask2, mask3, na.rm = TRUE)
   gc()
 
@@ -60,14 +51,51 @@ lapply(paste0("tile",1:c(nx*ny)), function(tile){
 })
 
   #negative masks. Take pixels that sum to 3. blot those out in the original raster
-if (FALSE){
-  # #the composite tiles are 8 GB each, so upload tiles separately)
-  toZip <- list.files("outputs/masks", full.names = TRUE)
-  utils::zip(zipfile = "outputs/nonHabitat_Masks.zip",
-             files = toZip,
-             flags = "-j")
-  thePath <- googledrive::drive_mkdir("PFC/Yan/Caribou Hindcast Results V2/nonHabitat masks")
-  thePath <- as_dribble(thePath)
-  drive_put("outputs/nonHabitat_Masks.zip", path = thePath)
-}
 
+
+####transition matrix
+
+transitionsByTile <- lapply(paste0("tile",1:c(nx*ny)), function(tile){
+
+  comps <- list.files(path = "outputs/composite/", pattern = tile, full.names = TRUE)
+  comps <- comps[grep(comps, pattern = "tif$")] #due to arcGIS, some .tif.aux files exist
+  hab1985 <- rast(grep(comps, pattern = 1985, value = TRUE))
+  hab2020 <- rast(grep(comps, pattern = 2020, value = TRUE))
+
+  dt <- data.table(hab1985 = values(hab1985, mat = FALSE),
+                   hab2020 = values(hab2020, mat = FALSE))
+  dt <- dt[, .N, .(hab1985, hab2020)] #make into a maxium 9 x 9 table
+
+  dt[, tile := tile]
+  gc()
+  return(dt)
+
+})
+
+transitionsByTile <- rbindlist(transitionsByTile)
+transitionsByTile <- transitionsByTile[!c(is.na(hab1985) & is.na(hab2020))]
+transitionsDT <- transitionsByTile[, .(N = sum(N)), .(hab1985, hab2020)]
+#join this inside lapply next time
+classLegend <- data.table(value = c(NaN, 1:8),
+                          names = c("non-habitat",
+                                    "natural disturbance", "harvest 0 to 5",
+                                    "harvest 6 to 20", "conifer 50-70",
+                                    "conifer 70+", "open woodland",
+                                    "wetland", "regenerating forest"))
+transitionsDT <- transitionsDT[classLegend, on = c("hab1985" = "value")]
+transitionsDT[, hab1985 := NULL]
+setnames(transitionsDT, old = "names", new = "hab 1985")
+transitionsDT <- transitionsDT[classLegend, on = c("hab2020" = "value")]
+transitionsDT[, hab2020 := NULL]
+setnames(transitionsDT, old = "names", new = "hab 2020")
+transitionsDT[order(N, decreasing = TRUE)]
+transitionsDT[, N_km2 := round(N/1111.11111, digits = 0)]
+transitions <- dcast(transitionsDT, formula = `hab 1985` ~ `hab 2020`, fill = 0, value.var = "N_km2")
+
+#####Composite Habitat#####
+#fire = 1, young/old harvest = 2 and 3, young/mature conifer = 4 and 5,
+#open woodland 6, wetland 7, regenerating forest = 8
+install.packages("circlize")
+temp <- copy(transitionsDT)
+setcolorder(temp, neworder = c("hab 1985", "hab 2020", "N_km2"))
+circlize:chordDiagramFromDataFrame(temp)
