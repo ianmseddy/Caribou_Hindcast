@@ -2,10 +2,12 @@ canopyCoverList <- list.files(path = "GIS/tiles", pattern = "att_closure", full.
 ageList <- list.files(path = "GIS/tiles", pattern = "att_age", full.names = TRUE)
 percDecidList <- list.files(path = "GIS/tiles", pattern = "prcD", full.names = TRUE)
 posList <- list.files(path = "GIS/tiles", pattern = "pos", full.names = TRUE)
+dYearList <- list.files(path = "GIS/tiles", pattern = "1985_2020_YRT2", full.names = TRUE)
 
-OpenWoodlands <- function(age, canopyCover, percDecid, pos, dBaseYear) {
+OpenWoodlands <- function(age, canopyCover, percDecid, pos, dYear, dBaseYear) {
 
   tileNum <- stringr::str_extract(age, pattern = "tile[0-9]+")
+
 
   #create focal matrix for use later
   percDecid <- rast(percDecid)
@@ -27,6 +29,12 @@ OpenWoodlands <- function(age, canopyCover, percDecid, pos, dBaseYear) {
   dt[, cover := NULL]
   rm(canopyCover)
   gc()
+
+  #remove any pixels that were disturbed recently (this is rare but happens)
+  dYear <- rast(dYear)
+  dt[, dYear := dYear[][dt$pixelID]]
+  dt <- dt[is.na(dYear)]
+  #this creates orphaned pixels if they were disturbed between 21-35 years ago, regardless of age
 
   pos <- rast(pos)
   dt[, pos := pos[][dt$pixelID]]
@@ -62,7 +70,7 @@ if (runAnalysis) {
   ageList2020 <- getYear(2020, ageList)
   canopyCoverList2020 <- getYear(2020, canopyCoverList)
   Map(OpenWoodlands, age = ageList2020, canopyCover = canopyCoverList2020,
-      percDecid = percDecidList2020, pos = posList,
+      percDecid = percDecidList2020, pos = posList, dYear = dYearList,
       MoreArgs = list(dBaseYear = 2020))
 
   #1985

@@ -86,7 +86,6 @@ Wetland <- function(age, landPos, lcc, canopyCover, percDecid,
 if (runAnalysis) {
   #2020 first
 
-  #TODO: rethink this whole "getYear" approach. It is ridiculous that we do this each time
   landPosList2020 <- getAtt(Att = "land_pos", Year = 2020)
   ageList2020 <- getAtt(Att = "age", 2020)
   canopyCoverList2020 <- getAtt("att_closure", 2020)
