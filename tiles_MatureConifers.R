@@ -40,7 +40,6 @@ MatureConifer <- function(age, canopyCover, percDecid, distYear = NULL, dBaseYea
     dt[, distYear := NULL]
   }
 
-
   #write young conifer
 
   dt[, age := age[dt$pixelID]]

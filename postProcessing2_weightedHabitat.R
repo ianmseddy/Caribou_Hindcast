@@ -155,6 +155,8 @@ makeCompositeHabitat <- function(tileList, year, outputPath) {
   compositeHabitat <- sum(compositeHabitat, regen, na.rm = TRUE, filename = outFile)
   rm(regen)
   gc()
+  stopifnot(max(terra::minmax(compositeHabitat) == 8))
+
 
   unlink(c(tempFile1, tempFile2, tempFile3, tempFile4))
 
