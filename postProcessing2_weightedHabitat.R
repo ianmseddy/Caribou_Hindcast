@@ -26,7 +26,6 @@ multi <- function(X, by){X * by}
 #multiply focal files by 1000 - this should have been done earlier...
 
 temp <- Reduce(c, habitatRasters)
-
 lapply(temp, FUN = function(x){
   oldName <- basename(x)
   newRas <- terra::app(rast(x), fun = multi, by = 1000, overwrite = TRUE,
@@ -88,10 +87,13 @@ makeWeightedHabitat <- function(tileList, year, outputPath) {
   #prepare final file
   tileNum <- stringr::str_extract(tileList[1], pattern = "tile[0-9]+")
   outFile <- file.path(outputPath, paste0("weightedHabitat_", year, "_", tileNum, ".tif"))
+
+  #TODO: I believe terra needs app(weightedHabitat, sum) to pass args like overwrite correctly
   weightedHabitat <- sum(weightedHabitat, regen, na.rm = TRUE, filename = outFile,
                          overwrite = TRUE, wopt = list(datatype = "INT2U"))
 
   #clean up
+  #terra now has a tmpFiles function that will do this for you
   unlink(x = c(tempFile1, tempFile2, tempFile3, tempFile4))
   gc()
   message(tileNum, " complete")
@@ -155,11 +157,11 @@ makeCompositeHabitat <- function(tileList, year, outputPath) {
   compositeHabitat <- sum(compositeHabitat, regen, na.rm = TRUE, filename = outFile)
   rm(regen)
   gc()
-  stopifnot(max(terra::minmax(compositeHabitat) == 8))
-
+  if (max(terra::minmax(compositeHabitat)) > 8) {
+    browser()
+  }
 
   unlink(c(tempFile1, tempFile2, tempFile3, tempFile4))
-
 
   message(tileNum, " complete")
 
@@ -172,6 +174,7 @@ lapply(habitatClasses, makeCompositeHabitat, year = 1985, outputPath = composite
 gc()
 
 #upload files
+#TODO: add the requisite checks for whether to upload, instead of this if block protection
 if (FALSE) {
   toZip <- list.files("outputs/weightedHabitat", full.names = TRUE)
   utils::zip(zipfile = "outputs/weightedHabitat.zip",
@@ -191,4 +194,13 @@ if (FALSE){
   drive_put("outputs/focalHabitat1000.zip", path = thePath)
 }
 
+if (FALSE){
+  # #the composite tiles are 8 GB each, so upload tiles separately)
+  toZip <- list.files("outputs/compositeHabitat", full.names = TRUE)
+  utils::zip(zipfile = "outputs/compositeHabitat.zip",
+             files = toZip,
+             flags = "-j")
+  thePath <- googledrive::as_dribble("PFC/Yan/Caribou Hindcast Results V2/focal habitat layers X 1000")
+  drive_put("outputs/focalHabitat1000.zip", path = thePath)
+}
 
