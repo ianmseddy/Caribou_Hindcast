@@ -69,6 +69,7 @@ if (runAnalysis) {
   percDecidList2020 <- getYear(2020, percDecidList)
   ageList2020 <- getYear(2020, ageList)
   canopyCoverList2020 <- getYear(2020, canopyCoverList)
+  dYearList <- getAtt(Att = "1985_2020_YRT2", 2020)
   Map(OpenWoodlands, age = ageList2020, canopyCover = canopyCoverList2020,
       percDecid = percDecidList2020, pos = posList, dYear = dYearList,
       MoreArgs = list(dBaseYear = 2020))
@@ -78,7 +79,7 @@ if (runAnalysis) {
   ageList1985 <- getYear(1985, ageList)
   canopyCoverList1985 <- getYear(1985, canopyCoverList)
   Map(OpenWoodlands, age = ageList1985, canopyCover = canopyCoverList1985,
-      percDecid = percDecidList1985, pos = posList,
+      percDecid = percDecidList1985, pos = posList, dYear = dYearList,
       MoreArgs = list(dBaseYear = 1985))
 }
 

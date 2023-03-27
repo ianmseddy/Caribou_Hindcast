@@ -6,52 +6,46 @@
 #assume fire, else harvest. This will likely overestimate harvest and underestimate natural disturbance,
 #but I am not sure if a better solution.
 
-#in hindsight, should have buffered the NFDB fire, as we might end up with "salt and pepper" harvest/fire.
+#March 2023: a considerable amount of landcover classified as shrub/grassland in 1985 regenerates to forest.
+#therefore, in 1985, this should be classified as natural disturbance < 20 y.o., rather than omitting it entirely,
+#as it is clearly a forest successional stage
 
-#in hindsight, didn't need to restrict fire year to 65-85 in the rasterized version
-
-InferDisturbances <- function(NFDB, MngFor, age, lcc, wetland, dBaseYear = 1985, outDir) {
+InferDisturbances <- function(NFDB, MngFor, age, lcc85, lcc2020, wetland, dBaseYear = 1985, outDir) {
   tileNum <- stringr::str_extract(age, pattern = "tile[0-9]+")
   #Non-forest pixels are 0 age, therefore I need Landcover 1985
   age <- rast(age)
-  #sanity check
-  NFDB1 <- rast(NFDB)
-  MngFor1 <- rast(MngFor)
-  lcc1 <- rast(lcc)
-  wetland1 <- rast(wetland)
-  compareGeom(NFDB1, age, lcc1)
-  compareGeom(lcc1, MngFor1, wetland1)
-  rm(NFDB1, MngFor1, lcc1, wetland1)
+  NFDB <- rast(NFDB)
+  MngFor <- rast(MngFor)
+  wetland <- rast(wetland)
+  lcc85 <- rast(lcc85)
+  lcc2020 <- rast(lcc2020)
+  compareGeom(NFDB, age, lcc85)
+  compareGeom(lcc2020, MngFor, wetland)
 
-  # focalMatrix <- terra::focalMat(x = age, d = focalWindow, type = "circle")
-
-  ageDT <- data.table(age = values(age), pixelID = 1:ncell(age))
-  rm(age)
-  setnames(ageDT, c("age", "pixelID"))
-  ageDT <- ageDT[age < 21]
-
+  ageDT <- data.table(lcc85 = values(lcc85, mat = FALSE),
+                      lcc20 = values(lcc2020, mat = FALSE),
+                      pixelID = 1:ncell(lcc2020))
+  setnames(ageDT, c("lcc85", "lcc2020", "pixelID"))
+  ageDT <- ageDT[lcc85 %in% c(5:7) | c(lcc85 %in% c(2, 4) & lcc2020 %in% c(5:7))]
+  #include forest or pixels that are vegetated that become forest
+  ageDT[, lcc2020 := NULL]
   gc()
-  #drop non-forest as these are age zero
-  lcc <- rast(lcc)
-  ageDT[, lcc := lcc[][ageDT$pixelID]] #get landcover
-  ageDT <- ageDT[lcc < 8 & lcc > 4,] #forest
-  ageDT[, lcc := NULL]
-  rm(lcc)
+
+  ageDT[, age := values(age, mat = FALSE)[pixelID]]
+  ageDT <- ageDT[age < 21 | lcc85 %in% c(2,4)]
+  ageDT[, lcc85 := NULL]
   gc()
 
   #drop pixels on wetland as they cannot be disturbed
-  wetland <- rast(wetland)
   ageDT[, wetland := values(wetland, data.frame = FALSE)[ageDT$pixelID]]
   ageDT <- ageDT[is.na(wetland)] #wetland is either 1 or NA
   ageDT[, wetland := NULL]
   gc()
 
   #get managed forest value and fire
-  MngFor <- rast(MngFor)
   ageDT[, MngFor := MngFor[][ageDT$pixelID]]
   rm(MngFor)
 
-  NFDB <- rast(NFDB)
   ageDT[, NFDB := NFDB[][ageDT$pixelID]]
   #sort into three classes: young harvest, old harvest, fire
   #anything that isn't in 50, 11, or 12 (managed and private forest) is burned
@@ -100,12 +94,12 @@ if (runAnalysis) {
   NFDBlist <- list.files(path = "GIS/tiles", pattern = "NFDB", full.names = TRUE)
   MngForList <- list.files(path = "GIS/tiles", pattern = "ManagedForest", full.names = TRUE)
   ageList <-getAtt("age", 1985)
-  lccList <- getAtt("VegTypeClass", 1985)
+  lccList85 <- getAtt("VegTypeClass", 1985)
   wetlandList <- getAtt("wetland", 1985, "outputs/raw")
+  lccList2020 <- getAtt("VegTypeClass", 2020)
 
-  Map(InferDisturbances, NFDB = NFDBlist, MngFor = MngForList,
-      age = ageList, lcc = lccList, wetland = wetlandList,
-      MoreArgs = list(dBaseYear = 1985,
-                      outDir = outputDir))
+  Map(InferDisturbances, NFDB = NFDBlist, MngFor = MngForList, age = ageList,
+      lcc85 = lccList85, lcc2020 = lccList2020, wetland = wetlandList,
+      MoreArgs = list(dBaseYear = 1985, outDir = outputDir))
 }
 
