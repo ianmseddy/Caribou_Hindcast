@@ -5,7 +5,7 @@ library(parallel)
 if (Sys.info()["sysname"] == "Linux") {
   inputDir <- "outputs/raw"
   outputDir <- "outputs/focalHabitat"
-  num_cores <- 5
+  num_cores <- 4
   cl <- makeCluster(num_cores)
 } else {
   inputDir <- "D:/Ian/YanBoulanger/maskedHabitat"
@@ -14,10 +14,8 @@ if (Sys.info()["sysname"] == "Linux") {
   cl <- makeCluster(num_cores)
 }
 
-focalFiles <- list.files(inputDir, pattern = ".tif", full.names = TRUE)
-focalFiles <- focalFiles[c(grep("Conifer2020", focalFiles),
-                           grep("harvest_0to5_2020", focalFiles),
-                           grep("harvest_6to20_2020", focalFiles))]
+focalFiles <- list.files(inputDir, pattern = ".tif", full.names = TRUE) %>%
+  .[grep(., pattern = "2020")]
 focalMatrix <- terra::focalMat(x = rast(focalFiles[1]), d = focalRadius, type = "circle")
 
 #run on 1985 first
@@ -25,13 +23,19 @@ focalMatrix <- terra::focalMat(x = rast(focalFiles[1]), d = focalRadius, type = 
 focalStats <- function(rastFile, weights = focalMatrix, outDir) {
   baseName <- basename(rastFile)
   outFile <- file.path(outDir, paste0("focal_", baseName))
-  inFile <- rast(rastFile)
-  set.names(inFile, baseName) #these rasters have been inheriting the wrong names..
-  focal(inFile, w = weights, sum, na.rm = TRUE,
-        expand = FALSE, filename = outFile, overwrite = TRUE)
-  rm(inFile)
+  inFile <- terra::rast(rastFile)
+
+  #passing a custom function did not work...terra does not allow non 'sum' functions.
+  out <- focal(inFile, w = weights, fun = "sum",
+               na.rm = TRUE,
+               expand = FALSE)
+  terra::varnames(out) <- baseName
+  convertToInt <- function(x){x * 1000}
+  out <- terra::app(out, convertToInt,
+                    filename = outFile,
+                    overwrite = TRUE,
+                    wopt = list(datatype = "INT2U"))
   gc()
-  return(NULL)
 }
 
 #each focal operation is ~22 GB/tile/year/habitat class -
@@ -42,7 +46,7 @@ clusterEvalQ(cl, {
 
 
 # clusterEvalQ(cl, focalMatrix)
-parLapply(cl, focalFiles, focalStats,
+parLapply(cl, X = focalFiles, fun = focalStats,
           outDir = outputDir)
 stopCluster(cl)
 
