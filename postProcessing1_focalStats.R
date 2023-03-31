@@ -31,10 +31,10 @@ focalStats <- function(rastFile, weights = focalMatrix, outDir) {
                expand = FALSE)
   terra::varnames(out) <- baseName
   convertToInt <- function(x){x * 1000}
-  out <- terra::app(out, convertToInt,
-                    filename = outFile,
-                    overwrite = TRUE,
-                    wopt = list(datatype = "INT2U"))
+  terra::app(out, convertToInt,
+             filename = outFile,
+             overwrite = TRUE,
+             wopt = list(datatype = "INT2U"))
   gc()
 }
 
