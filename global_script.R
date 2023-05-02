@@ -23,7 +23,7 @@ checkPath("GIS/tiles", create = TRUE)
 # 0.25 * mature conifer  > 70 yo  --- uses CaNFIR_att_age,
 # 0.19 * young mature conifer forests 50-70 years old
 # 0.14 * wetlands
-# 0.22 * open lichen woodlands (age 50+ conifers with < 30% cover)
+# 0.22 * open lichen woodlands (age 50+ conifers with < 25% cover)
 # 0.06 * natural disturbances < 20
 # 0.04 * cutblocks 5 yo or less
 # 0.04 * cutblocks 6-20 - same weight as 5yo but s.d. is different

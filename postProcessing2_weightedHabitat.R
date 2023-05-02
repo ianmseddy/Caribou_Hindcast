@@ -4,36 +4,17 @@
 # generate a habitat class layer by assigning 1:8 to binary habitats
 if (Sys.info()["sysname"] == "Linux") {
   focalHabitatDir <- "outputs/focalHabitat"
-  focalHabitatDir1000 <- "outputs/focalHabitat1000" #this should have been done in focal - if I ever rerun...
   weightedDir <- "outputs/weightedHabitat"
   compositeDir <- "outputs/compositeHabitat"
 
 } else {
   focalHabitatDir <- "D:/Ian/YanBoulanger/maskedHabitat"
-  focalHabitatDir1000 <- "outputs/focalHabitat1000" #this should have been done in focal - if I ever rerun...
   weightedDir <- "D:/Ian/YanBoulanger/focalHabitat"
   compositeDir <- "D:/Ian/YanBoulanger/compositeHabitat"
 }
 
 checkPath(weightedDir, create = TRUE)
 tiles <- paste0("tile", 1:8)
-
-
-checkPath("outputs/focalHabitat1000", create = TRUE)
-
-habitatRasters <- lapply(tiles, list.files, path = focalHabitatDir, full.names = TRUE)
-multi <- function(X, by){X * by}
-#multiply focal files by 1000 - this should have been done earlier...
-
-temp <- Reduce(c, habitatRasters)
-lapply(temp, FUN = function(x){
-  oldName <- basename(x)
-  newRas <- terra::app(rast(x), fun = multi, by = 1000, overwrite = TRUE,
-                       filename = file.path(focalHabitatDir1000, oldName),
-                       wopt = list(datatype = "INT2U"))
-  gc()
-})
-
 
 
 #Weighted habitat ####
@@ -99,10 +80,11 @@ makeWeightedHabitat <- function(tileList, year, outputPath) {
   message(tileNum, " complete")
 }
 
-habitatRasters <- lapply(tiles, list.files, path = "outputs/focalHabitat1000", full.names = TRUE)
+habitatRasters <- lapply(tiles, list.files, path = focalHabitatDir, full.names = TRUE)
 #this could be stored as INT1U - as the theoretical max habitat is 240 (1000 * 0.24 weight)
-lapply(habitatRasters, FUN = makeWeightedHabitat, year = 2020, outputPath = weightedDir)
-lapply(habitatRasters, FUN = makeWeightedHabitat, year = 1985, outputPath = weightedDir)
+#this fills up the temp drive so don't run all 8 tiles and 16 years
+lapply(habitatRasters[7:8], FUN = makeWeightedHabitat, year = 2020, outputPath = weightedDir)
+lapply(habitatRasters[7:8], FUN = makeWeightedHabitat, year = 1985, outputPath = weightedDir)
 
 
 
