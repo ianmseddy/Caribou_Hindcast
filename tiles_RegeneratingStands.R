@@ -50,7 +50,6 @@ RegeneratingStands <- function(age, percDecid, pos, canopyCover, distYear = NULL
   dt <- dt[!c(age > 50 & cc < 25)]
 
   #remove the coniferous age 50+
-  #this assumes disturbed mature conifer on wetland becomes regenerating stand, not wetland
   regeneratingStand <- dt[percDecid > 75 | c(percDecid <= 75 & age < 50),]$pixelID
   rm(dt)
   repvals <- rep(NA, times = ncell(percDecid))

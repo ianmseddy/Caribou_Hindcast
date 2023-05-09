@@ -8,7 +8,9 @@
 
 #March 2023: a considerable amount of landcover classified as shrub/grassland in 1985 regenerates to forest.
 #therefore, in 1985, this should be classified as natural disturbance < 20 y.o., rather than omitting it entirely,
-#as it is clearly a forest successional stage
+#as it is clearly a forest successional stage. However some of these areas are classified as Open Woodland.
+#there is no  floor on the canopy cover requirement, and their age is 50+, with majority conifer.
+#
 
 InferDisturbances <- function(NFDB, MngFor, age, lcc85, lcc2020, wetland, dBaseYear = 1985, outDir) {
   tileNum <- stringr::str_extract(age, pattern = "tile[0-9]+")
@@ -32,7 +34,9 @@ InferDisturbances <- function(NFDB, MngFor, age, lcc85, lcc2020, wetland, dBaseY
   gc()
 
   ageDT[, age := values(age, mat = FALSE)[pixelID]]
-  ageDT <- ageDT[age < 21 | lcc85 %in% c(2,4)]
+  ageDT <- ageDT[age < 21 | c(lcc85 %in% c(2,4) & c(age < 21 | is.na(age)))]
+  #the age < 21 prevents any open woodland and regenerating forest being double-counted as natural disturbance,
+  #as both classes may have non-forest values
   ageDT[, lcc85 := NULL]
   gc()
 
@@ -103,3 +107,4 @@ if (runAnalysis) {
       MoreArgs = list(dBaseYear = 1985, outDir = outputDir))
 }
 
+rm(NFDBlist, MngForList, ageList, lccList85, lccList2020, wetlandList)
