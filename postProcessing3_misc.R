@@ -2,6 +2,7 @@ checkPath("outputs/weightedDifference", create = TRUE) #for the difference betwe
 checkPath("outputs/masks", create = TRUE) #to mask out irrelevant pixels like water, urban, grassland
 
 habitatRasters <- list.files(path = "outputs/weightedHabitat", full.names = TRUE)
+#terra diff seems to be producing NAs
 lapply(paste0("tile", 1:c(nx*ny)), function(tile){
   habs <- list.files(path = "outputs/weightedHabitat", full.names = TRUE, pattern = tile)
   hab1985 <- rast(grep(habs, pattern = "1985", value =TRUE))
@@ -57,14 +58,14 @@ lapply(paste0("tile",1:c(nx*ny)), function(tile){
 
 transitionsByTile <- lapply(paste0("tile",1:c(nx*ny)), function(tile){
 
-  comps <- list.files(path = "outputs/composite/", pattern = tile, full.names = TRUE)
+  comps <- list.files(path = "outputs/compositeHabitat/", pattern = tile, full.names = TRUE)
   comps <- comps[grep(comps, pattern = "tif$")] #due to arcGIS, some .tif.aux files exist
   hab1985 <- rast(grep(comps, pattern = 1985, value = TRUE))
   hab2020 <- rast(grep(comps, pattern = 2020, value = TRUE))
 
   dt <- data.table(hab1985 = values(hab1985, mat = FALSE),
                    hab2020 = values(hab2020, mat = FALSE))
-  dt <- dt[, .N, .(hab1985, hab2020)] #make into a maxium 9 x 9 table
+  dt <- dt[, .N, .(hab1985, hab2020)] #make into a maximum 9 x 9 table
 
   dt[, tile := tile]
   gc()
@@ -78,10 +79,10 @@ transitionsDT <- transitionsByTile[, .(N = sum(N)), .(hab1985, hab2020)]
 #join this inside lapply next time
 classLegend <- data.table(value = c(NaN, 1:8),
                           names = c("non-habitat",
-                                    "natural disturbance", "harvest 0 to 5",
-                                    "harvest 6 to 20", "conifer 50-70",
+                                    "nat. dist.", "harvest 0-5",
+                                    "harvest 6-20", "conifer 50-70",
                                     "conifer 70+", "open woodland",
-                                    "wetland", "regenerating forest"))
+                                    "wetland", "reg. forest"))
 transitionsDT <- transitionsDT[classLegend, on = c("hab1985" = "value")]
 transitionsDT[, hab1985 := NULL]
 setnames(transitionsDT, old = "names", new = "hab 1985")
@@ -92,10 +93,22 @@ transitionsDT[order(N, decreasing = TRUE)]
 transitionsDT[, N_km2 := round(N/1111.11111, digits = 0)]
 transitions <- dcast(transitionsDT, formula = `hab 1985` ~ `hab 2020`, fill = 0, value.var = "N_km2")
 
-#####Composite Habitat#####
-#fire = 1, young/old harvest = 2 and 3, young/mature conifer = 4 and 5,
-#open woodland 6, wetland 7, regenerating forest = 8
-install.packages("circlize")
-temp <- copy(transitionsDT)
-setcolorder(temp, neworder = c("hab 1985", "hab 2020", "N_km2"))
-circlize:chordDiagramFromDataFrame(temp)
+#as a confusion matrix - need to calculate row and col sums
+transitionMatrix <- copy(transitions)
+transitionMatrix[, sumRow := rowSums(.SD), .SD = toSum]
+output <- transitionMatrix[, lapply(.SD, FUN = function(x){
+  round(x/sumRow, digits = 4) * 100}),
+  .SD = toSum]
+output[, className := transitionMatrix$`hab 1985`]
+setcolorder(output, "className")
+output
+
+
+#km2
+output_Mha <- transitionMatrix[, lapply(.SD, FUN = function(x){
+  round(x/1e4, digits = 3)}),
+  .SD = toSum]
+output_Mha[, className := transitionMatrix$`hab 1985`]
+setcolorder(output_Mha, "className")
+output_Mha
+write.csv(output_Mha, "temp/transitions_Mha.csv")
