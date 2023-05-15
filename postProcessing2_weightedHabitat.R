@@ -83,8 +83,8 @@ makeWeightedHabitat <- function(tileList, year, outputPath) {
 habitatRasters <- lapply(tiles, list.files, path = focalHabitatDir, full.names = TRUE)
 #this could be stored as INT1U - as the theoretical max habitat is 240 (1000 * 0.24 weight)
 #this fills up the temp drive so don't run all 8 tiles and 16 years
-lapply(habitatRasters[7:8], FUN = makeWeightedHabitat, year = 2020, outputPath = weightedDir)
-lapply(habitatRasters[7:8], FUN = makeWeightedHabitat, year = 1985, outputPath = weightedDir)
+lapply(habitatRasters, FUN = makeWeightedHabitat, year = 2020, outputPath = weightedDir)
+lapply(habitatRasters, FUN = makeWeightedHabitat, year = 1985, outputPath = weightedDir)
 
 
 
@@ -136,7 +136,7 @@ makeCompositeHabitat <- function(tileList, year, outputPath) {
                fun = multi, by = 8, filename = tempFile1, overwrite = TRUE)
   tileNum <- stringr::str_extract(tileList[1], pattern = "tile[0-9]+")
   outFile <- file.path(outputPath, paste0("compositeHabitat_", year, "_", tileNum, ".tif"))
-  compositeHabitat <- sum(compositeHabitat, regen, na.rm = TRUE, filename = outFile)
+  compositeHabitat <- sum(compositeHabitat, regen, na.rm = TRUE, filename = outFile, overwrite = TRUE)
   rm(regen)
   gc()
   if (max(terra::minmax(compositeHabitat)) > 8) {

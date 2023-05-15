@@ -9,7 +9,7 @@ Wetland <- function(age, landPos, lcc, canopyCover, percDecid,
   percDecid1 <- rast(percDecid)
   age1 <- rast(age)
   lcc1 <- rast(lcc)
-  compareGeom(landPos, canopyCover1, percDecid1) #evidently you can't compare >3 rasters...
+  compareGeom(landPos, canopyCover1, percDecid1)
   compareGeom(landPos, age1, lcc1)
   rm(canopyCover1, percDecid1, age1, lcc1)
 
