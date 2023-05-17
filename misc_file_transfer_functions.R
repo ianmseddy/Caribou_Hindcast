@@ -54,23 +54,26 @@ results <- drive_ls(as_id("https://drive.google.com/drive/folders/1bqXed21z922H1
 FileID <- results[results$name == "weightedHabitat.zip",]$id
 googledrive::drive_download(file = FileID,
                             path = "outputs/weightedHabitat.zip", overwrite = TRUE)
-utils::unzip(zipfile = "outputs/weightedHabitat.zip", exdir = "outputs/weightedHabitat")
+utils::unzip(zipfile = "outputs/weightedHabitat.zip", exdir = "outputs/weightedHabitat", overwrite = TRUE)
 
 
 FileID <- results[results$name == "compositeHabitat.zip",]$id
 googledrive::drive_download(file = FileID,
                             path = "outputs/compositeHabitat.zip", overwrite = TRUE)
-utils::unzip(zipfile = "outputs/compositeHabitat.zip", exdir = "outputs/compositeHabitat")
+utils::unzip(zipfile = "outputs/compositeHabitat.zip", exdir = "outputs/compositeHabitat", overwrite = TRUE)
 
 FileID <- results[results$name == "nonHabitat_Masks.zip",]$id
 googledrive::drive_download(file = FileID,
                             path = "outputs/nonHabitat_Masks.zip")
 utils::unzip(zipfile = "outputs/nonHabitat_masks.zip", exdir = "outputs/masks")
 
-FileID <- results[results$name == "changeInWeightedHabitat.zip",]$id
+FileID <- results[results$name == "weightedDifference.zip",]$id
 googledrive::drive_download(file = FileID,
-                            path = "outputs/changeInWeightedHabitat.zip")
-utils::unzip(zipfile = "outputs/changeInWeightedHabitat.zip", exdir = "outputs/changeInWeightedHabitat")
+                            path = "outputs/weightedDifference.zip",
+                            overwrite = TRUE)
+utils::unzip(zipfile = "outputs/weightedDifference.zip",
+             exdir = "outputs/weightedDifference",
+             overwrite = TRUE)
 
 FileID <- results[results$name == "focalHabitat1000.zip",]$id
 googledrive::drive_download(file = FileID,
