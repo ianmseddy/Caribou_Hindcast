@@ -27,7 +27,6 @@ library("sf")
 library("data.table")
 library("reproducible")
 library("stringr")
-library("raster") #
 library("googledrive") #uploading results
 library("magrittr") #for piping, before |> came along
 library("parallel") #for focal operations

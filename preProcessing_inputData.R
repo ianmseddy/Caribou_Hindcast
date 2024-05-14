@@ -100,9 +100,9 @@ if (any(notTiled < (nx * ny))) {
   missingTiles <- processed[notTiled < nx*ny]
   clearTemp <- ifelse(missingTiles > 5, TRUE, FALSE) #this is likely going to fill temp drive with 100 GB
   lapply(missingTiles, FUN = function(toTile, tempDr = clearTemp){
-    asRaster <- raster(toTile) #must be raster
+    asRaster <- rast(toTile) #previously these had to be RasterLayers, now SpatRaster should be okay
     #cc, percD, landcover, pos, all under 255
-    SpaDES.tools::splitRaster(asRaster, nx = nx, ny = ny, buffer = c(35, 35),
+    SpaDES.tools::splitRaster(asRaster, nx = nx, ny = ny, buffer = c(35, 35), #note this is pixels not metres, 35 = 30*35m
                               rType = "INT2S", path = "GIS/tiles", fExt = ".tif")
     if (tempDr) {
       tempFiles <- list.files(tempdir(), full.names = TRUE, pattern = ".grd")
@@ -146,8 +146,6 @@ ManagedForest <- prepInputs(url = paste0("https://drive.google.com/file/d",
 ManagedForest <- terra::project(ManagedForest, ageRTM)
 ManagedForest <- terra::mask(ManagedForest, SA, filename = "GIS/Eastern_ManagedForest.tif", overwrite = TRUE)
 gc()
-#read it in again as a raster - required for SpaDES.tools::splitRaster
-ManagedForest <- raster("GIS/Eastern_ManagedForest.tif")
 
 #this buffer refers to pixels - 35 will be greater than 1 km, ensuring no edge effect when we merge back.
 #(there is still an edge effect on the provincial land borders, ie Ontario/Manitoba)
@@ -168,15 +166,14 @@ NFDB <- terra::crop(NFDB, SA)
 NFDB <- sf::st_as_sf(NFDB)
 NFDB <- st_cast(NFDB, to = "MULTIPOLYGON")
 
-#fasterize does not have a filename argument, so this raster will temporarily exist in RAM.
-ageRTM <- raster("GIS/Eastern_SCANFI_att_age_S_2020_v0.tif")
-NFDB <- st_transform(NFDB, crs(ageRTM))
-NFDBras <- fasterize(NFDB, raster = ageRTM, field = "YEAR")
 
-writeRaster(NFDBras, "GIS/NFDB_raster_1965_1985.tif", overwrite = TRUE)
+ageRTM <- rast("GIS/Eastern_SCANFI_att_age_S_2020_v0.tif")
+NFDB <- st_transform(NFDB, crs(ageRTM))
+NFDBras <- rasterize(NFDB, ageRTM, field = "YEAR",
+                     filename = "GIS/NFDB_raster_1965_1985.tif", overwrite = TRUE)
 rm(NFDBras)
 gc()
-NFDBras <- raster("GIS/NFDB_raster_1965_1985.tif")
+NFDBras <- rast("GIS/NFDB_raster_1965_1985.tif")
 #tile the NFDB
 fireTiles <- list.files("GIS/tiles", pattern = "NFDB", full.names = TRUE)
 if (length(fireTiles) < 1) {
