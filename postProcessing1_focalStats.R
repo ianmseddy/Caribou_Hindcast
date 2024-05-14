@@ -2,17 +2,9 @@
 library(parallel)
 #the radius argument is 1000 - the area is 3.14 km2
 
-if (Sys.info()["sysname"] == "Linux") {
-  inputDir <- "outputs/raw"
-  outputDir <- "outputs/focalHabitat"
-  num_cores <- 4
-  cl <- makeCluster(num_cores)
-} else {
-  inputDir <- "D:/Ian/YanBoulanger/maskedHabitat"
-  outputDir <- "D:/Ian/YanBoulanger/focalHabitat"
-  num_cores <- 6
-  cl <- makeCluster(num_cores)
-}
+inputDir <- "outputs/raw"
+outputDir <- "outputs/focalHabitat"
+cl <- makeCluster(ncores)
 
 focalFiles <- list.files(inputDir, pattern = ".tif", full.names = TRUE) %>%
   .[grep(., pattern = "2020")]
@@ -25,7 +17,6 @@ focalStats <- function(rastFile, weights = focalMatrix, outDir) {
   outFile <- file.path(outDir, paste0("focal_", baseName))
   inFile <- terra::rast(rastFile)
 
-  #passing a custom function did not work...terra does not allow non 'sum' functions.
   out <- focal(inFile, w = weights, fun = "sum",
                na.rm = TRUE,
                expand = FALSE)
@@ -55,5 +46,5 @@ tiles <- paste0("tile", c(ny * nx))
 nComplete <- unlist(lapply(tiles, list.files, path = outputDir, full.names = TRUE) %>%
   lapply(., length))
 if (!all(nComplete == length(tiles))) {
-  stop("aahhh")
+  stop("aahhh you must be missing tiles!")
 }

@@ -45,7 +45,7 @@ source("tiles_MatureConifers.R")
 
 
 #TODO: #logged wetland may be better described as logged - wetland is very broad category - seeking input from Mathieu
-#it was decided to ignore these
+#it was decided to ignore these after discussion
 source("tiles_Wetland.R")
 
 #3)	Identify the natural disturbances < 20 y.o
@@ -73,7 +73,7 @@ source("tiles_RegeneratingStands.R")
 
 covariates2020 <- c("matureConifer", "youngConifer", "openWoodland", "regenerating",
                     "wetland", "harvest_0to5", "harvest_6to20", "naturalDisturbance")
-#don't use lapply as we don't want 7 rasters
+
 
 #setValues as an intermediate step causes the raster to be in memory, blowing up RAM use to > 100 GB
 #in hindsight I should have multiplied the focal values before writing them to disk

@@ -2,19 +2,12 @@
 # convert all focal habitat rasters into single weighted habitat layer for each year
 # calculate the difference
 # generate a habitat class layer by assigning 1:8 to binary habitats
-if (Sys.info()["sysname"] == "Linux") {
-  focalHabitatDir <- "outputs/focalHabitat"
-  weightedDir <- "outputs/weightedHabitat"
-  compositeDir <- "outputs/compositeHabitat"
-
-} else {
-  focalHabitatDir <- "D:/Ian/YanBoulanger/maskedHabitat"
-  weightedDir <- "D:/Ian/YanBoulanger/focalHabitat"
-  compositeDir <- "D:/Ian/YanBoulanger/compositeHabitat"
-}
+focalHabitatDir <- "outputs/focalHabitat"
+weightedDir <- "outputs/weightedHabitat"
+compositeDir <- "outputs/compositeHabitat"
 
 checkPath(weightedDir, create = TRUE)
-tiles <- paste0("tile", 1:8)
+tiles <- paste0("tile", 1:c(nx*ny))
 
 
 #Weighted habitat ####

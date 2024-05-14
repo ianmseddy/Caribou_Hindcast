@@ -1,7 +1,6 @@
 #####uploading####
 library(googledrive)
-gDrivePath <- "PFC/Yan/Caribou Hindcast Results V2"
-
+#this is the path to a folder in my google drive with 3 TB storage
 checkGPath <- function(gdriveFolder){
   checkPath <- drive_get(gdriveFolder)
   if (length(checkPath$name) == 0){
@@ -11,7 +10,7 @@ checkGPath <- function(gdriveFolder){
 }
 
 if (FALSE){
-
+  #if you run this, it will overwrite the files in googledrive
   toZip <- list.files("outputs/raw", full.names = TRUE)
   utils::zip(zipfile = "outputs/raw.zip",
              files = toZip,
