@@ -43,6 +43,9 @@ if (!all(unlist(downloadedFiles))) {
   for (i in names(missingFiles)) {
     googledrive::drive_download(file = as_id(missingFiles[[i]]),
                                 path = file.path("GIS", i))
+    #when SCANFI is published - instead of using googledrive -
+    #change the URLs above to the new url, and use prepInputs instead of drive_download, like so
+    #prepInputs(url = missingFiles[[i]], destinationPath = "GIS", filename2 = i)
   }
   rm(missingFiles, downloadedFiles)
 }
