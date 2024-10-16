@@ -1,5 +1,8 @@
 #project set up
 
+#if on NRCan network and CRAN is blocked, uncomment this line
+Sys.setenv(R_LIBCURL_SSL_REVOKE_BEST_EFFORT=TRUE)
+
 #first make a custom package library
 pkgDir <- file.path(tools::R_user_dir("data"), "Caribou_Hindcast", "packages",
                     version$platform, substr(getRversion(), 1, 3))
@@ -13,10 +16,10 @@ if (FALSE) {
   library(Require)
   Require("remotes", upgrade = FALSE)
 
-  Require::setLibPaths()
+  setLibPaths()
   #at the moment this terra version throws obnoxious but harmless errors. Upgrading to source would solve the issue,
   #but the source version was unavailable when I began this project.
-  Require::Require(packages = c("terra (>=1.6.7)", "sf", "data.table", "reproducible (>=1.2.10.9001)",
+  Require(packages = c("terra (>=1.6.7)", "sf", "data.table", "reproducible (>=1.2.10.9001)",
             "stringr", "raster", "googledrive", "magrittr", "parallel", "SpaDES.tools", "fasterize"),
           upgrade = FALSE)
 }
