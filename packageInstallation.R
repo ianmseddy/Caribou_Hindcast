@@ -32,6 +32,7 @@ library("magrittr") #for piping, before |> came along
 library("parallel") #for focal operations
 library("SpaDES.tools") #for splitRaster into tiles
 library("fasterize") #turning vectors into rasters
+# fasterize may be unnecessary now that we uare using SpatRasters and terra::rasterize
 
 # packageVersion('terra') #1.6.7
 # packageVersion('reproducible') 1.2.10.9001
